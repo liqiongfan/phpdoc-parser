@@ -35,7 +35,7 @@
 ZEND_BEGIN_ARG_INFO_EX(ARGINFO(xan_class_construct), 0, 0, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO_EX(ARGINFO(xan_class_get_class_doc_comment), 0, 0, 0)
+ZEND_BEGIN_ARG_INFO_EX(ARGINFO(xan_class_get_class_doc_comment), 0, 0, 1)
     ZEND_ARG_INFO(0, objectOrName)
 ZEND_END_ARG_INFO()
 
