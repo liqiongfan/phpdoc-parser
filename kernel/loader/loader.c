@@ -113,6 +113,10 @@ XAN_METHOD(Loader, loader)
     memcpy(class_alias, ZSTR_VAL(class_name), class_alias_len);
 
     zval *aliases = zend_read_property(XAN_ENTRY_OBJ(getThis()), XAN_STRL(ALL_ALIAS), 1, NULL);
+    if (!zend_hash_num_elements(Z_ARRVAL_P(aliases)))
+    {
+        XAN_INFO(E_ERROR, "Please setMap the aliasName before autoLoad()!");
+    }
 
     ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(aliases), zkey, zvalue)
     {
