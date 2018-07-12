@@ -4,7 +4,7 @@
 
 An extension for PHP document parsing. written in C code.
 
-Author：Josin <774542602@qq.com>
+Author：Josin <774542602@qq.com> | <a href="https://www.supjos.cn/archives/46.html#directory0065624643873947846">博客</a>
 
 ## 何为注解?  ##
 
