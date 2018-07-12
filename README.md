@@ -45,7 +45,7 @@ class A
 
 ## 安装 ##
 
-**1: cmake(版本3.10)，更改 CMakeLists.txt 中的 PHP 路径为您及其的路径，然后执行如下命令即可:**
+**1: cmake(版本3.10)，更改 CMakeLists.txt 中的 PHP 路径为您电脑PHP的路径，然后执行如下命令即可:**
 
 ``` cmake .```
 
