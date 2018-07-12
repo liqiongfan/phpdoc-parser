@@ -52,6 +52,9 @@ ZEND_BEGIN_ARG_INFO_EX(ARGINFO(xan_class_get_parse_result), 0, 0, 1)
     ZEND_ARG_INFO(0, docComment)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(ARGINFO(xan_class_parse_all_methods_doc_comment), 0, 0, 1)
+    ZEND_ARG_INFO(0, objectOrName)
+ZEND_END_ARG_INFO()
 /*}}}*/
 
 /**
@@ -111,6 +114,8 @@ XAN_METHOD(Xan, getMethodDocComment)
         XAN_INFO(E_ERROR, "MethodName must be valid string!");
     }
 
+    method_name = zend_string_tolower(method_name);
+
     if (Z_TYPE_P(object_or_name) == IS_STRING)
     {
         class_entry = zend_lookup_class(Z_STR_P(object_or_name));
@@ -154,7 +159,7 @@ XAN_METHOD(Xan, parseDocComment)
 }/*}}}*/
 
 /**
- * {{{ protoXan::getParseResult($docComment)
+ * {{{ proto Xan::getParseResult($docComment)
  * To obtain the result of the annotation parseing
  */
 XAN_METHOD(Xan, getParseResult)
@@ -174,6 +179,68 @@ XAN_METHOD(Xan, getParseResult)
 }/*}}}*/
 
 /**
+ * {{{ proto Xan::parseAllMethodsDocComment($objectOrName)
+ * Parsing all methods doc-comment for the given class or object
+ * Result is an object which contains the following format:
+ * Object
+ * {
+ *     'annotations' => [
+ *         'world' => [
+ *             'annotations' => [],
+ *             'num' => '',
+ *             'body' => ''
+ *         ]
+ *         'xxx' => []
+ *     ],
+ *     'num' => 3
+ * }
+ */
+XAN_METHOD(Xan, parseAllMethodsDocComment)
+{
+    zend_class_entry *ce;
+    zend_function *each_func;
+    zval *object_or_name, each_func_ret, all_rets;
+
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &object_or_name) == FAILURE)
+    {
+        return ;
+    }
+
+    if (Z_TYPE_P(object_or_name) == IS_OBJECT)
+    {
+        ce = Z_OBJCE_P(object_or_name);
+    }
+    else if ( Z_TYPE_P(object_or_name) == IS_STRING )
+    {
+        ce = zend_lookup_class(Z_STR_P(object_or_name));
+        if( !ce )
+        {
+            XAN_INFO(E_ERROR, "Class %s not found.", Z_STRVAL_P(object_or_name));
+        }
+    }
+    else
+    {
+        XAN_INFO(E_ERROR, "Parameter $objectOrName must be Object or Class name.");
+    }
+
+    write_long_property_to_object(getThis(), "num", zend_hash_num_elements(&ce->function_table));
+
+    array_init(&all_rets);
+    
+    ZEND_HASH_FOREACH_PTR(&ce->function_table, each_func)
+    {
+        array_init(&each_func_ret);
+        get_doc_comment_result(&each_func_ret, get_function_doc_comment(&each_func->op_array));
+        add_assoc_zval(&all_rets, ZSTR_VAL(each_func->common.function_name), &each_func_ret);
+
+    } ZEND_HASH_FOREACH_END();
+
+    write_zval_property_to_object(getThis(), "annotations", &all_rets);
+
+    RETURN_ZVAL(getThis(), 1, NULL);
+}/*}}}*/
+
+/**
  * {{{ 
  * All functions to the Xan class
  */
@@ -183,6 +250,7 @@ XAN_FUNCTIONS(xan)
     XAN_ME(Xan, getMethodDocComment, arginfo_xan_class_get_method_doc_comment, ZEND_ACC_PUBLIC)
     XAN_ME(Xan, parseDocComment, arginfo_xan_class_parse_doc_comment,  ZEND_ACC_PUBLIC)
     XAN_ME(Xan, getParseResult, arginfo_xan_class_get_parse_result,  ZEND_ACC_PUBLIC)
+    XAN_ME(Xan, parseAllMethodsDocComment, arginfo_xan_class_parse_all_methods_doc_comment,  ZEND_ACC_PUBLIC)
 XAN_FUNCTIONS_END() /*}}}*/
 
 /**
@@ -208,8 +276,12 @@ zend_string *get_class_doc_comment(zend_class_entry *ce)
         return NULL;
     }
     return ce->info.user.doc_comment;
-}
+}/*}}}*/
 
+/**
+ * {{{ 
+ * Get the function doc-comments
+ */
 zend_string *get_function_doc_comment(zend_op_array *op_array)
 {
     if ( !op_array )
@@ -217,7 +289,7 @@ zend_string *get_function_doc_comment(zend_op_array *op_array)
         return NULL;
     }
     return op_array->doc_comment;
-}
+}/*}}}*/
 
 /**
  * {{{ proto parse_line_comment(zval *retval, char *str)
@@ -241,6 +313,11 @@ static void parse_line_comment(zval *retval, char *str)
             para_right = index;
             break;
         }
+    }
+    if (para_left == 0 && para_right == 0)
+    {
+        ZVAL_NULL(retval);
+        return ;
     }
     memcpy(anno_attr, str + para_left + 1, para_right - para_left - 1);
     
@@ -278,13 +355,12 @@ static void parse_line_comment(zval *retval, char *str)
     add_assoc_zval(retval, anno_name, &temp_array);
 }/*}}}*/
 
-
-
 /**
  * {{{
  * To parse the doc-comment for the object or object's method.
+ * object: means the value will write to the property of the object
  */
-static void parse_doc_comment(zval *object, zend_string *doc_comment)
+void parse_doc_comment(zval *object, zend_string *doc_comment)
 {
     if ( !ZSTR_LEN(doc_comment) )
     {
@@ -296,6 +372,7 @@ static void parse_doc_comment(zval *object, zend_string *doc_comment)
     char buff[1024] = {0}, body[2048] = {0};
     char *comments = ZSTR_VAL(doc_comment);
     size_t index = 0, sig_start = 0, comment_body_start = 0, comment_body_end = 0;
+    array_init(&anno);
 
     for( ; index < ZSTR_LEN(doc_comment); index++)
     {
@@ -321,12 +398,12 @@ static void parse_doc_comment(zval *object, zend_string *doc_comment)
         if (comments[index] == '\n' && sig_start != 0)
         {
             bzero(buff, sizeof(buff));
-            array_init(&anno);
             strncpy(buff, comments + sig_start, index - sig_start);
             parse_line_comment(&anno, buff);
-            zend_merge_properties(object, Z_ARRVAL(anno));
         }
     }
+    write_zval_property_to_object(object, "annotations", &anno);
+    write_property_to_object(object, "num", ZSTR_VAL(strpprintf(0, "%d", zend_hash_num_elements(Z_ARRVAL(anno))) ) );
 
     /* To parse the commend_body */
     memcpy(body, comments + comment_body_start, comment_body_end - comment_body_start);
@@ -347,6 +424,7 @@ static void parse_doc_comment(zval *object, zend_string *doc_comment)
 
 /**
  * {{{ proto Get the result into the retval value
+ * retval: means the result is array
  */
 static void get_doc_comment_result(zval *retval, zend_string *doc_comment)
 {
@@ -367,6 +445,7 @@ static void get_doc_comment_result(zval *retval, zend_string *doc_comment)
     char buff[1024] = {0}, body[2048] = {0};
     char *comments = ZSTR_VAL(doc_comment);
     size_t index = 0, sig_start = 0, comment_body_start = 0, comment_body_end = 0;
+    array_init(&anno);
 
     for( ; index < ZSTR_LEN(doc_comment); index++)
     {
@@ -392,12 +471,13 @@ static void get_doc_comment_result(zval *retval, zend_string *doc_comment)
         if (comments[index] == '\n' && sig_start != 0)
         {
             bzero(buff, sizeof(buff));
-            array_init(&anno);
             strncpy(buff, comments + sig_start, index - sig_start);
             parse_line_comment(&anno, buff);
-            add_next_index_zval(retval, &anno);
         }
     }
+
+    add_assoc_zval(retval, "annotations", &anno);
+    add_assoc_long(retval, "num", zend_hash_num_elements(Z_ARRVAL(anno)));
 
     /* To parse the commend_body */
     memcpy(body, comments + comment_body_start, comment_body_end - comment_body_start);
@@ -427,9 +507,40 @@ static void write_property_to_object(zval *object, char *key, char *value)
     const zend_object_handlers *obj_ht = Z_OBJ_HT_P(object);
     zend_class_entry *old_scope = EG(fake_scope);
     obj_ht->write_property(object, &zkey, &zvalue, NULL);
+    zval_ptr_dtor(&zkey);
+    zval_ptr_dtor(&zvalue);
     EG(fake_scope) = old_scope;
 }/*}}}*/
 
+/**
+ * {{{ proto Write property to the object, it will call the __set magic method
+ * if exists
+ */
+static void write_zval_property_to_object(zval *object, char *key, zval *value)
+{
+    zval zkey;
+    ZVAL_STRING(&zkey,key);
+    const zend_object_handlers *obj_ht = Z_OBJ_HT_P(object);
+    zend_class_entry *old_scope = EG(fake_scope);
+    obj_ht->write_property(object, &zkey, value, NULL);
+    zval_ptr_dtor(&zkey);
+    EG(fake_scope) = old_scope;
+}/*}}}*/
+
+/**
+ * Write long value to object
+ */
+static void write_long_property_to_object(zval *object, char *key, zend_long value)
+{
+    zval zkey, zvalue;
+    ZVAL_STRING(&zkey,key);
+    ZVAL_LONG(&zvalue, value);
+    const zend_object_handlers *obj_ht = Z_OBJ_HT_P(object);
+    zend_class_entry *old_scope = EG(fake_scope);
+    obj_ht->write_property(object, &zkey, &zvalue, NULL);
+    zval_ptr_dtor(&zkey);
+    EG(fake_scope) = old_scope;
+}/*}}}*/
 /*
  * Local variables:
  * tab-width: 4

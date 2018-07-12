@@ -24,9 +24,11 @@ extern zend_class_entry *xan_ce;
 
 zend_string *get_class_doc_comment(zend_class_entry *ce);
 zend_string *get_function_doc_comment(zend_op_array *op_array);
-static void parse_doc_comment(zval *object, zend_string *doc_comment);
+void parse_doc_comment(zval *object, zend_string *doc_comment);
 static void get_doc_comment_result(zval *retval, zend_string *doc_comment);
 static void write_property_to_object(zval *object, char *key, char *value);
+static void write_zval_property_to_object(zval *object, char *key, zval *value);
+static void write_long_property_to_object(zval *object, char *key, zend_long value);
 #endif /* XAN_CLASS_H */
 
 
