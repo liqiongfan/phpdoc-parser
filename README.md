@@ -19,7 +19,7 @@ PHP7.x
 
 final class Xan
 {
-	function __construct();
+    function __construct();
 }
 
 ```
@@ -34,7 +34,7 @@ final class Xan
  */
 function getClassDocComment($classNameOrObject)
 {
-	return $this;
+    return $this;
 }
 ```
 
@@ -59,17 +59,18 @@ function getMethodDocComment($classNameOrObject, $methodName)
 /**
  * 返回一个包含注解信息的对象，[body]包含的是说明信息，其余的注解每一个注解是一个数组
  * 如：
+ * <pre>
  * /**
- *  * 类对象A
- *  *
- *  * @Route("/hello/world")
- *  * @NotEmpty(name="age", version="v2.1.1")
+ *  * @Route("hello/world")
+ *  * @method("vs", "value se"="hello", yes="fsdfls" )
  *  */
- * class A
+ * public function world()
  * {
+ * 
  * }
- *
+ * </pre>
  * 那么返回结果如下：
+ * <pre>
  * Array
  * (
  *     [annotations] => Array
@@ -91,7 +92,7 @@ function getMethodDocComment($classNameOrObject, $methodName)
  *     [num] => 2
  *     [body] => 
  * )
- *
+ * </pre>
  * @param $docComments 需要解析的注解信息
  */
 function parseDocComment($docComments)
@@ -159,7 +160,7 @@ function getParseResult($docComments)
  *                 )
  *         )
  * )
- * <pre>
+ * </pre>
  *
  * The result contains the `num` key means the methods number
  * the `annotations` key contains the result array, each key-value pair contains the key(The function name) & the value(array)
