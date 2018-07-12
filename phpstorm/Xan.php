@@ -28,8 +28,8 @@ final class Xan
      * getClassDocComment(new Xan()) or
      * getClassDocComment(Xan::class)
      *
-     * @param $objectOrName The class object or name which you want to obtain the doc-comments
-     * @return string       The doc-comments which you want to obtain
+     * @param $objectOrName object|string   The class object or name which you want to obtain the doc-comments
+     * @return string                       The doc-comments which you want to obtain
      */
     function getClassDocComment($objectOrName) : string
     {
@@ -39,9 +39,9 @@ final class Xan
      * Function `getMethodDocComment` was used to obtain the object's method doc-comments
      * with the given object & method name
      *
-     * @param $objectOrName     The class object or name which you want to obtain the doc-comment
-     * @param $methodName       The method name which exists in the $objectOrName class
-     * @return string           The result contains the doc-comments
+     * @param $objectOrName object|string     The class object or name which you want to obtain the doc-comment
+     * @param $methodName   string            The method name which exists in the $objectOrName class
+     * @return string                         The result contains the doc-comments
      */
     function getMethodDocComment($objectOrName, $methodName) : string
     {
@@ -50,8 +50,8 @@ final class Xan
     /**
      * Function `parseDocComment` was designed to parsing the doc-comments
      *
-     * @param $docComments      The doc-comments which you want to parsing
-     * @return this             The object which contains the result.
+     * @param $docComments string      The doc-comments which you want to parsing
+     * @return this                    The object which contains the result.
      */
     function parseDocComment($docComments) : this
     {
@@ -60,8 +60,8 @@ final class Xan
     /**
      * Function: `getParseResult` parsing the result which return an array that contains the parsing result.
      *
-     * @param $docComments      The doc-comments which you want to parsing.
-     * @return array            An array contains the parsing result.
+     * @param $docComments  string   The doc-comments which you want to parsing.
+     * @return array                 An array contains the parsing result.
      */
     function getParseResult($docComments) : array
     {
@@ -122,8 +122,8 @@ final class Xan
      * `num`        : The number of the annotations
      * `body`       : The body of the annotations
      *
-     * @param $objectOrName  The class name or object which you want to obtain the annotations
-     * @return this          The object contains the value
+     * @param $objectOrName object|string  The class name or object which you want to obtain the annotations
+     * @return this                        The object contains the value
      */
     function parseAllMethodsDocComment($objectOrName) : this
     {
