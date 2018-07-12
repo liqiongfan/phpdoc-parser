@@ -1,14 +1,267 @@
 # phpdoc-parser
 
-高性能的 **PHP** 注解分析器，基于 **PHP7.x** 开发的一个PHP扩展
+开发此扩展的缘由在于昨天写 **Spring** 的时候发现注解是个好东西，可以简化很多的代码工作量，鉴于 **PHP** 没有注解的语法糖，所以只能开发一个扩展来替代，高性能的 **PHP** 注解分析器，基于 **PHP7.x** 开发的一个PHP扩展
 
 An extension for PHP document parsing. written in C code.
 
 Author：Josin <774542602@qq.com>
 
-## 使用环境 ##
+## 何为注解?  ##
 
-PHP7.x
+在 Java 中到处可见注解的身影，如 ```@Null``` **or** ```@NotNull``` 等，其实注解就是一种修饰 变量、类、方法的对象，如下：
+
+```php
+/**
+ * @NotNull
+ */
+class A
+{
+}
+```
+就表示使用 ```NotNull``` 注解来修饰 类 ```A```，当然注解也可以携带参数：
+
+```php
+class A
+{
+    /**
+     * @NotNull(age)
+     * @Default(age=22, type = "Car")
+     * @Set("www.supjos.cn", email="774542602@qq.com")
+     */
+    function test()
+    {
+    }
+}
+```
+
+当前版本的 ```php-doc-comments``` 支持如上的三种形式的注解。下一个版本加入类初始化功能，使用指定的函数来初始化 ```注解``` 类 
+
+## 支持环境 ##
+
+```>= PHP7.0```
+```Linux/Unix(Mac OS X)```
+
+```Windows``` version need to be changed the ```config.w32``` file and compile, wish some one do the job instead of me.
+
+## 安装 ##
+
+**1: cmake(版本3.10)，更改 CMakeLists.txt 中的 PHP 路径为您及其的路径，然后执行如下命令即可:**
+
+``` cmake .```
+
+**2: phpconfigure**
+
+```shell
+/usr/path_to_php/phpize
+
+./configure --with-php-config=/usr/path_to_php/php-config
+
+make -j && sudo make install -j
+
+echo "xannotation.so" >> /usr/path_to_php/php.ini
+```
+
+## 使用示例 ##
+
+**测试类 Hello**
+
+```php
+/**
+ * Class Hello * hello * world
+ *
+ * This is the first time to do the job for the annotation
+ * License: LGPL-v3
+ *
+ ****This is the toast which need to be test the annotation.
+ *
+ * @type(name = "Hello", age = "world",  good=fruit, info=www.supjos.cn)
+ * @version(value="v2.1.23",  version="2323.23", name = "game")
+ */
+class Hello
+{
+    /**
+     * 商品列表视图
+     *
+     * @Route("hello/world")
+     * @Method("vs", "value se"="hello", attr="private" )
+     */
+    public function world()
+    {
+
+    }
+
+    /**
+     * 获取方法的注解信息，返回一个对象
+     *
+     * @NotEmpty("classNameOrObject", "methodName")
+     */
+    function getMethodDocComment($classNameOrObject, $methodName)
+    {
+    }
+
+    /**
+     * 返回类的注解信息
+     *
+     * @NotEmpty("classNameOrObject")
+     */
+    function getClassDocComment($classNameOrObject)
+    {
+    }
+}
+```
+
+**获取注解信息示例：**
+
+```php
+$xan = new Xan();
+```
+**获取类的注解信息:**
+
+```php
+$docComments = $xan->getClassDocComment(Hello::class);
+print_r($xan->getParseResult($docComments));
+```
+
+**输出如下**
+
+```php
+Array
+(
+    [annotations] => Array
+        (
+            [type] => Array
+                (
+                    [name] => Hello
+                    [age] => world
+                    [good] => fruit
+                    [info] => www.supjos.cn
+                )
+
+            [version] => Array
+                (
+                    [value] => v2.1.23
+                    [version] => 2323.23
+                    [name] => game
+                )
+
+        )
+
+    [num] => 2
+    [body] => Class Hello * hello * world
+
+ This is the first time to do the job for the annotation
+ License: LGPL-v3
+
+This is the toast which need to be test the annotation.
+)
+```
+
+
+**获取类方法的注解信息：**
+
+```php
+$docComments = $xan->getMethodDocComment(Hello::class, "world");
+print_r($xan->getParseResult($docComments));
+```
+
+**输出如下**
+
+```php
+Array
+(
+    [annotations] => Array
+        (
+            [Route] => Array
+                (
+                    [1] => hello/world
+                )
+
+            [method] => Array
+                (
+                    [3] => vs
+                    [value se] => hello
+                    [yes] => fsdfls
+                )
+
+        )
+
+    [num] => 2
+    [body] => 商品列表视图
+)
+
+```
+
+**获取类的所有的方法的注解信息：**
+
+```php
+print_r($xan->parseAllMethodsDocComment(Hello::class));
+```
+
+**输出如下**
+
+```php
+Xan Object
+(
+    [num] => 3
+    [annotations] => Array
+        (
+            [world] => Array
+                (
+                    [annotations] => Array
+                        (
+                            [Route] => Array
+                                (
+                                    [1] => hello/world
+                                )
+
+                            [method] => Array
+                                (
+                                    [3] => vs
+                                    [value se] => hello
+                                    [yes] => fsdfls
+                                )
+
+                        )
+
+                    [num] => 2
+                    [body] => 商品列表视图
+                )
+
+            [getMethodDocComment] => Array
+                (
+                    [annotations] => Array
+                        (
+                            [NotEmpty] => Array
+                                (
+                                    [2] => classNameOrObject
+                                    [3] => methodName
+                                )
+
+                        )
+
+                    [num] => 1
+                    [body] => 获取方法的注解信息，返回一个对象
+                )
+
+            [getClassDocComment] => Array
+                (
+                    [annotations] => Array
+                        (
+                            [NotEmpty] => Array
+                                (
+                                    [1] => classNameOrObject
+                                )
+
+                        )
+
+                    [num] => 1
+                    [body] => 返回类的注解信息
+                )
+
+        )
+
+)
+```
 
 ## 简洁的APIs ##
 
@@ -19,7 +272,7 @@ PHP7.x
 
 final class Xan
 {
-    function __construct();
+    function __construct(){};
 }
 
 ```

@@ -314,7 +314,15 @@ static void parse_line_comment(zval *retval, char *str)
             break;
         }
     }
-    if (para_left == 0 && para_right == 0)
+
+    if ( (para_left == 0) && (para_right == 0))
+    {
+        para_right = strlen(str);
+        memcpy(anno_attr, str + para_left, para_right - para_left);
+        add_assoc_null(retval, anno_attr);
+        return ;
+    }
+    else if ( (para_left != 0 && para_right == 0) )
     {
         ZVAL_NULL(retval);
         return ;
