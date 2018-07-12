@@ -61,8 +61,9 @@ if test "$PHP_XANNOTATION" != "no"; then
 
   PHP_NEW_EXTENSION(
     xannotation, 
-    kernel/entries.c    \
-    kernel/xan_class.c  \
+    kernel/entries.c        \
+    kernel/xan_class.c      \
+    kernel/loader/loader.c  \
     xannotation.c, 
     $ext_shared,, -DZEND_ENABLE_STATIC_TSRMLS_CACHE=1)
 fi

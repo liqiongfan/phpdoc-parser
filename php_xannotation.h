@@ -58,8 +58,17 @@ ZEND_END_MODULE_GLOBALS(xannotation)
 ZEND_TSRMLS_CACHE_EXTERN()
 #endif
 
+/**
+ * {{{
+ * User should to modify this value to 0 when in production mode
+ */
+#define DEBUG_MODE 0
+/*}}}*/
 
-
+/**
+ * {{{
+ * The following are some macros for easy extension development
+ */
 #define XAN_ME                    PHP_ME
 #define XAN_AB_ME                 PHP_ABSTRACT_ME
 #define XAN_METHOD                PHP_METHOD
@@ -73,6 +82,7 @@ ZEND_TSRMLS_CACHE_EXTERN()
 
 #define XAN_INFO(type, info...)   php_error_docref(NULL, type, ##info)
 #define XAN_ENTRY_OBJ(obj)             (Z_OBJCE_P(obj)),(obj)
+#define XAN_FOREACH_STR_VAL(ht, key, value) ZEND_HASH_FOREACH_STR_KEY_VAL(ht, key, value)
 #define XAN_CC_STRING(entry, name, string_value)         zend_declare_class_constant_string(entry, XAN_STRL(name), string_value)
 #define XAN_CC_LONG(entry, name, long_value)             zend_declare_class_constant_long(entry, XAN_STRL(name), long_value)
 #define XAN_CC_BOOL(entry, name, bool_value)             zend_declare_class_constant_bool(entry, XAN_STRL(name), bool_value)
@@ -84,9 +94,10 @@ ZEND_TSRMLS_CACHE_EXTERN()
 #define XAN_PR_LONG(entry, name, long_value, type)       zend_declare_property_long(entry, XAN_STRL(name), long_value, type)
 #define XAN_PR_DOUBLE(entry, name, double_value, type)   zend_declare_property_double(entry, XAN_STRL(name), double_value, type)
 #define XAN_PR_STRING(entry, name, string_value, type)   zend_declare_property_string(entry, XAN_STRL(name), string_value, type)
+#define XAN_PR_ESTRING(entry, name, type)                zend_declare_property_string(entry, XAN_STRL(name), "", type)
 #define XAN_STRL(str)                  (str),(sizeof(str)-1)
 #define XAN_STRS(str)                  (str),(sizeof(str))
-
+/*}}}*/
 
 #endif	/* PHP_XANNOTATION_H */
 

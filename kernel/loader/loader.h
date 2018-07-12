@@ -12,23 +12,24 @@
   | obtain it through the world-wide-web, please send a note to          |
   | license@php.net so we can mail you a copy immediately.               |
   +----------------------------------------------------------------------+
-  | Author: Josin                                                        |
+  | Author:  Josin                                                       |
   +----------------------------------------------------------------------+
 */
 
 /* $Id$ */
+#ifndef XAN_LOADER_H
+#define XAN_LOADER_H
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+#include <string.h>
+#define ALL_ALIAS "all_alias"
 
-#include "php.h"
-#include "php_ini.h"
-#include "ext/standard/info.h"
-#include "php_xannotation.h"
+void is_file(char *path);
+void get_current_cwd(char *path);
+void require_php_file(char *file_name);
+void reverse_zend_string_slash(zend_string *string);
+extern zend_class_entry *loader_ce;
 
-zend_class_entry *xan_ce;
-zend_class_entry *loader_ce;
+#endif /*XAN_LOADER_H*/
 
 
 /*

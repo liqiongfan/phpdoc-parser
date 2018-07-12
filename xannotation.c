@@ -38,6 +38,7 @@ static int le_xannotation;
  * All declaration for the function in the init
  */
 XAN_INIT(xan);
+XAN_INIT(loader);
 
 /*}}}*/
 
@@ -90,6 +91,7 @@ static void php_xannotation_init_globals(zend_xannotation_globals *xannotation_g
 PHP_MINIT_FUNCTION(xannotation)
 {
 	xan_init();
+	loader_init();
 
 	return SUCCESS;
 }
