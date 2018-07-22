@@ -354,6 +354,7 @@ static void parse_line_comment(zval *retval, char *str)
         {
             add_next_index_str(&temp_array, php_trim(trim_value, XAN_STRL(" \""), 3));
         }
+        
         zend_hash_index_del(Z_ARRVAL(temp_array), ukey);
         
     } ZEND_HASH_FOREACH_END();
@@ -434,7 +435,7 @@ void parse_doc_comment(zval *object, zend_string *doc_comment)
  * {{{ proto Get the result into the retval value
  * retval: means the result is array
  */
-static void get_doc_comment_result(zval *retval, zend_string *doc_comment)
+void get_doc_comment_result(zval *retval, zend_string *doc_comment)
 {
     if (Z_TYPE_P(retval) != IS_ARRAY)
     {

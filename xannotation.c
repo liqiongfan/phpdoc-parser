@@ -26,6 +26,7 @@
 #include "php_ini.h"
 #include "ext/standard/info.h"
 #include "php_xannotation.h"
+#include "Zend/zend_interfaces.h"
 
 /* If you declare any globals in php_xannotation.h uncomment this:
 ZEND_DECLARE_MODULE_GLOBALS(xannotation)
@@ -39,6 +40,10 @@ static int le_xannotation;
  */
 XAN_INIT(xan);
 XAN_INIT(loader);
+XAN_INIT(annotation);
+XAN_INIT(config_class);
+XAN_INIT(attr_annotation);
+XAN_INIT(const_annotation);
 
 /*}}}*/
 
@@ -74,6 +79,21 @@ PHP_FUNCTION(get_xan_version)
    follow this convention for the convenience of others editing your code.
 */
 
+/**
+ * {{{ proto replace_ce
+ */
+PHP_FUNCTION(replace_ce)
+{
+	zend_class_entry *ce = zend_hash_str_find_ptr(CG(class_table), XAN_STRL("base"));
+	if ( !ce )
+	{
+		XAN_INFO(E_ERROR, "Class %s not found.");
+	}
+
+	zval value;
+	ZVAL_STRING(&value, "world");
+	zend_declare_property_ex(ce, strpprintf(0, "%s", "hello"), &value, ZEND_ACC_PUBLIC, NULL );
+}/*}}}*/
 
 /* {{{ php_xannotation_init_globals
  */
@@ -92,6 +112,10 @@ PHP_MINIT_FUNCTION(xannotation)
 {
 	xan_init();
 	loader_init();
+	annotation_init();
+	config_class_init();
+	attr_annotation_init();
+	const_annotation_init();
 
 	return SUCCESS;
 }
@@ -149,6 +173,7 @@ PHP_MINFO_FUNCTION(xannotation)
  */
 const zend_function_entry xannotation_functions[] = {
 	PHP_FE(get_xan_version,	NULL)		/* For testing, remove later. */
+	PHP_FE(replace_ce,	    NULL)		/* For testing, remove later. */
 	PHP_FE_END	/* Must be the last line in xannotation_functions[] */
 };
 /* }}} */

@@ -1,6 +1,4 @@
-# Xan
-
-开发此扩展的缘由在于昨天写 **Spring** 的时候发现注解是个好东西，可以简化很多的代码工作量，鉴于 **PHP** 没有注解的语法糖，所以只能开发一个扩展来替代，高性能的 **PHP** 注解分析器，基于 **PHP7.x** 开发的一个PHP扩展
+# Xan 高性能的PHP注解扩展
 
 An extension for PHP document parsing. written in C code.
 
@@ -8,17 +6,7 @@ Author：Josin <774542602@qq.com> | <a href="https://www.supjos.cn/archives/46.h
 
 ## 何为注解?  ##
 
-在 Java 中到处可见注解的身影，如 ```@Null``` **or** ```@NotNull``` 等，其实注解就是一种修饰 变量、类、方法的对象，如下：
-
-```php
-/**
- * @NotNull
- */
-class A
-{
-}
-```
-就表示使用 ```NotNull``` 注解来修饰 类 ```A```，当然注解也可以携带参数：
+在 __Java__ 中到处可见注解的身影，如 __`@Null`__ **or** __`@NotNull`__ 等，其实注解就是一种修饰 变量、类、方法的对象，如下，注解也可以携带参数：
 
 ```php
 class A
@@ -34,7 +22,54 @@ class A
 }
 ```
 
-当前版本的 ```php-doc-comments``` 支持如上的三种形式的注解。下一个版本加入类初始化功能，使用指定的函数来初始化 ```注解``` 类 
+##  注解初始化类属性
+
+当前的版本中，可以使用注解来进行类常量与属性的添加，注解类属性依次来完成功能，目前注解类已经实现 __`ConstAnnotation`__ 与 __`AttrAnnotation`__ ，用来初始化类的常量与普通的属性，本功能需要使用内置的自动加载引擎才可以，如下：
+
+__`index.php`__ 文件代码如下：
+
+```php
+// 使用 Xan\Loader 加载引擎完成类的自动加载功能
+$loader = new \Xan\Loader();
+
+// 当前的 app 命名空间是当前文件夹
+// 本方法可以多次调用来生成多个命名空间，优先级的顺序越来越低
+$loader->setMap('@app', __DIR__);
+
+$loader->autoLoad();
+
+
+// 开始使用注解功能
+$base = new app\Base();
+
+echo app\Base::TOOL . '<=>' . app\Base::URL;
+echo $base->name . '<=>' . $base->version . PHP_EOL;
+```
+
+__`app\Base`__ 类的代码如下(文件命名为：__`Base.php`__)：
+
+```php
+namespace app;
+
+/**
+ * Class Base
+ *
+ * @\Xan\Type\Annotation\AttrAnnotation(name="Xannotation", version="v1.0.2")
+ * @\Xan\Type\Annotation\ConstAnnotation(TOOL="C/C++", URL="https://www.supjos.cn")
+ */
+class Base
+{
+    const GAP = 1;
+}
+```
+
+工程的文件路径示意：
+
+```php
+-dir
+  +++index.php
+  +++Base.php
+```
 
 ## 支持环境 ##
 
@@ -45,11 +80,13 @@ class A
 
 ## 安装 ##
 
-**1: cmake(版本3.10)，更改 CMakeLists.txt 中的 PHP 路径为您电脑PHP的路径，然后执行如下命令即可:**
+**1: CMake 安装**
+
+版本 3.10+， 手工修改自带的 CMakeLists.txt 文件的 php 路径即可
 
 ``` cmake .```
 
-**2: phpconfigure**
+**2: php-configure**
 
 ```shell
 /usr/path_to_php/phpize

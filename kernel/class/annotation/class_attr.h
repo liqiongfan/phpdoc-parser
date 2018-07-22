@@ -12,27 +12,18 @@
   | obtain it through the world-wide-web, please send a note to          |
   | license@php.net so we can mail you a copy immediately.               |
   +----------------------------------------------------------------------+
-  | Author: Josin                                                        |
+  | Author:  Josin                                                       |
   +----------------------------------------------------------------------+
 */
 
 /* $Id$ */
+#ifndef XAN_CLASS_ATTR_H
+#define XAN_CLASS_ATTR_H
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+extern zend_class_entry *class_attr_ce;;
 
-#include "php.h"
-#include "php_ini.h"
-#include "ext/standard/info.h"
-#include "php_xannotation.h"
+#endif /*XAN_CLASS_ATTR_H*/
 
-zend_class_entry *xan_ce;
-zend_class_entry *loader_ce;
-zend_class_entry *annotation_ce;
-zend_class_entry *class_attr_ce;
-zend_class_entry *class_const_ce;
-zend_class_entry *config_class_ce;
 
 /*
  * Local variables:

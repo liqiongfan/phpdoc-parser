@@ -97,6 +97,8 @@ ZEND_TSRMLS_CACHE_EXTERN()
 #define XAN_PR_ESTRING(entry, name, type)                zend_declare_property_string(entry, XAN_STRL(name), "", type)
 #define XAN_STRL(str)                  (str),(sizeof(str)-1)
 #define XAN_STRS(str)                  (str),(sizeof(str))
+#define XAN_CHECK_METHOD(object, method_name)           ( ( Z_OBJ_HT_P(object)->get_method(&Z_OBJ_P(object),\
+                                                        zend_string_init(XAN_STRL(method_name), 0), NULL)) != NULL )
 /*}}}*/
 
 #endif	/* PHP_XANNOTATION_H */

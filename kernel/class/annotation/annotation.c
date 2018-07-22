@@ -26,13 +26,46 @@
 #include "php_ini.h"
 #include "ext/standard/info.h"
 #include "php_xannotation.h"
+#include "ext/standard/php_string.h"
+#include "kernel/class/annotation/annotation.h"
 
-zend_class_entry *xan_ce;
-zend_class_entry *loader_ce;
-zend_class_entry *annotation_ce;
-zend_class_entry *class_attr_ce;
-zend_class_entry *class_const_ce;
-zend_class_entry *config_class_ce;
+/**
+ * {{{
+ * proto All arginfo for class ConfigClass
+ */
+ZEND_BEGIN_ARG_INFO_EX(ARGINFO(xan_annotation_input), 0, 0, 2)
+    ZEND_ARG_INFO(0, classEntry)
+    ZEND_ARG_INFO(0, annotations)
+ZEND_END_ARG_INFO()
+
+/*}}}*/
+
+/**
+ * {{{ proto
+ * Annotation::input($annotations = [])
+ */
+XAN_METHOD(Annotation, input)
+{
+}/*}}}*/
+
+/**
+ * {{{
+ * functions for annotation
+ */
+XAN_FUNCTIONS(annotation)
+    XAN_AB_ME(Annotation, input, arginfo_xan_annotation_input)
+XAN_FUNCTIONS_END()
+/*}}}*/
+
+/**
+ * {{{ annotation_init()
+ */
+XAN_INIT(annotation)
+{
+    zend_class_entry ce;
+    INIT_NS_CLASS_ENTRY(ce, "Xan\\Type\\Annotation", "Annotation", annotation_functions);
+    annotation_ce = zend_register_internal_interface(&ce);
+}/*}}}*/
 
 /*
  * Local variables:
