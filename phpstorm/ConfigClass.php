@@ -21,9 +21,9 @@ class ConfigClass
     /**
      * Add a constant key-value to the given class with the given class name named `$className`
      *
-     * @param $className
-     * @param $key
-     * @param $value
+     * @param string $className Class name, since PHP5.5 user can use the `::class` to get the class name
+     * @param string $key       The key name
+     * @param mixed $value      The key value.
      */
     static function setConstant($className, $key, $value){ }
 
@@ -33,9 +33,9 @@ class ConfigClass
      * [NOTE]: This method will first to found the property_info in class_entry. if exists, modify the value and the access
      * flags with the given flgas, otherwise add the attribute-value to the object's property_tables.
      *
-     * @param $object
-     * @param $key
-     * @param $value
+     * @param object $object The object which you want to set the attributes.
+     * @param string $key    The string key also the attribute name
+     * @param mixed $value   The value associated with the key
      * @param $flags FINAL|PUBLIC and so on, or value with the `|` such as:
      *                            FINAL | PUBLIC or
      *                            STATIC | PUBLIC | FINAL
@@ -46,9 +46,9 @@ class ConfigClass
      * Set the access flags to the given class's key with the params:
      * `$key` & `$flags`
      *
-     * @param $className
-     * @param $key
-     * @param $flags FINAL|PUBLIC and so on, or value with the `|` such as:
+     * @param string $className  The name which you want to set
+     * @param string $key        The key name you want to set
+     * @param int $flags FINAL|PUBLIC and so on, or value with the `|` such as:
      *                            FINAL | PUBLIC or
      *                            STATIC | PUBLIC | FINAL
      */
