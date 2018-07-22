@@ -98,220 +98,16 @@ make -j && sudo make install -j
 echo "xannotation.so" >> /usr/path_to_php/php.ini
 ```
 
-## 使用示例 ##
-
-**测试类 Hello**
-
-```php
-/**
- * Class Hello * hello * world
- *
- * This is the first time to do the job for the annotation
- * License: LGPL-v3
- *
- ****This is the toast which need to be test the annotation.
- *
- * @type(name = "Hello", age = "world",  good=fruit, info=www.supjos.cn)
- * @version(value="v2.1.23",  version="2323.23", name = "game")
- */
-class Hello
-{
-    /**
-     * 商品列表视图
-     *
-     * @Route("hello/world")
-     * @Method("vs", "value se"="hello", attr="private" )
-     */
-    public function world()
-    {
-
-    }
-
-    /**
-     * 获取方法的注解信息，返回一个对象
-     *
-     * @NotEmpty("classNameOrObject", "methodName")
-     */
-    function getMethodDocComment($classNameOrObject, $methodName)
-    {
-    }
-
-    /**
-     * 返回类的注解信息
-     *
-     * @NotEmpty("classNameOrObject")
-     */
-    function getClassDocComment($classNameOrObject)
-    {
-    }
-}
-```
-
-**获取注解信息示例：**
-
-```php
-$xan = new Xan();
-```
-**获取类的注解信息:**
-
-```php
-$docComments = $xan->getClassDocComment(Hello::class);
-print_r($xan->getParseResult($docComments));
-```
-
-**输出如下**
-
-```php
-Array
-(
-    [annotations] => Array
-        (
-            [type] => Array
-                (
-                    [name] => Hello
-                    [age] => world
-                    [good] => fruit
-                    [info] => www.supjos.cn
-                )
-
-            [version] => Array
-                (
-                    [value] => v2.1.23
-                    [version] => 2323.23
-                    [name] => game
-                )
-
-        )
-
-    [num] => 2
-    [body] => Class Hello * hello * world
-
- This is the first time to do the job for the annotation
- License: LGPL-v3
-
-This is the toast which need to be test the annotation.
-)
-```
-
-
-**获取类方法的注解信息：**
-
-```php
-$docComments = $xan->getMethodDocComment(Hello::class, "world");
-print_r($xan->getParseResult($docComments));
-```
-
-**输出如下**
-
-```php
-Array
-(
-    [annotations] => Array
-        (
-            [Route] => Array
-                (
-                    [1] => hello/world
-                )
-
-            [method] => Array
-                (
-                    [3] => vs
-                    [value se] => hello
-                    [yes] => fsdfls
-                )
-
-        )
-
-    [num] => 2
-    [body] => 商品列表视图
-)
-
-```
-
-**获取类的所有的方法的注解信息：**
-
-```php
-print_r($xan->parseAllMethodsDocComment(Hello::class));
-```
-
-**输出如下**
-
-```php
-Xan Object
-(
-    [num] => 3
-    [annotations] => Array
-        (
-            [world] => Array
-                (
-                    [annotations] => Array
-                        (
-                            [Route] => Array
-                                (
-                                    [1] => hello/world
-                                )
-
-                            [method] => Array
-                                (
-                                    [3] => vs
-                                    [value se] => hello
-                                    [yes] => fsdfls
-                                )
-
-                        )
-
-                    [num] => 2
-                    [body] => 商品列表视图
-                )
-
-            [getMethodDocComment] => Array
-                (
-                    [annotations] => Array
-                        (
-                            [NotEmpty] => Array
-                                (
-                                    [2] => classNameOrObject
-                                    [3] => methodName
-                                )
-
-                        )
-
-                    [num] => 1
-                    [body] => 获取方法的注解信息，返回一个对象
-                )
-
-            [getClassDocComment] => Array
-                (
-                    [annotations] => Array
-                        (
-                            [NotEmpty] => Array
-                                (
-                                    [1] => classNameOrObject
-                                )
-
-                        )
-
-                    [num] => 1
-                    [body] => 返回类的注解信息
-                )
-
-        )
-
-)
-```
-
 ## 简洁的APIs ##
 
 
 **Xan 类构造函数**
 
 ```php
-
 final class Xan
 {
     function __construct(){};
 }
-
 ```
 
 **类注解： Xan::getClassDocComment($classNameOrObject)**
@@ -388,6 +184,82 @@ function parseAllMethodsDocComment($objectOrName) : this
 {
 }
 ```
+
+#### 自动加载 Xan\Loader类
+
+**构造函数Xan\Loader::__construct()**
+
+```php
+namespace Xan;
+class Loader
+{
+    function __construct();
+}
+```
+
+**设置别名：Xan\Loader::setMap($aliasName, $path)**
+
+```php
+namespace Xan;
+class Loader
+{
+    function setMap($aliasName, $path);
+}
+```
+
+**启动自动加载：Xan\Loader::autoLoad($prepend = false)**
+
+```php
+namespace Xan;
+class Loader
+{
+    function autoLoad($prepend = false);
+}
+```
+
+#### 类配置工具： Xan\Type\ConfigClass
+
+**构造函数 Xan\Type\ConfigClass::__construct()**
+
+```php
+namespace Xan\Type;
+class ConfigClass
+{
+    function __construct();
+}
+```
+
+**设置类常量 Xan\Type\ConfigClass::setConstant($className, $key, $value)**
+
+```php
+namespace Xan\Type;
+class ConfigClass
+{
+    function setConstant($className, $key, $value);
+}
+```
+
+**设置属性 Xan\Type\ConfigClass::setAttribute($object, $key, $value, $flags = Xan\Type\ConfigClass::PUBLIC)**
+
+```php
+namespace Xan\Type;
+class ConfigClass
+{
+    function setAttribute($object, $key, $value, $flags = Xan\Type\ConfigClass::PUBLIC);
+}
+```
+
+**设置属性可见性 Xan\Type\ConfigClass::setAccessFlags($className, $key, $flags = Xan\Type\ConfigClass::PUBLIC)**
+
+```php
+namespace Xan\Type;
+class ConfigClass
+{
+    function setAccessFlags($className, $key, $flags = Xan\Type\ConfigClass::PUBLIC)
+}
+```
+
+
 
 
 
