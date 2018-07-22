@@ -24,7 +24,7 @@ class A
 
 ##  注解初始化类属性
 
-目前注解类已经在__`C`__语言底层实现 __`ConstAnnotation`__ 与 __`AttrAnnotation`__ ，用来初始化类的常量与普通的属性，但是__用户可以自定义注解只需要实现接口__ __`Xan\Type\Annotation\Annotation`__，然后实现接口方法：__`input`__ 即可，本功能需要使用内置的__`自动加载引擎`__才可以，如下：
+目前注解类已经在 __`C`__ 语言底层实现 __`ConstAnnotation`__ 与 __`AttrAnnotation`__ ，用来初始化类的常量与普通的属性，但是 __用户可以自定义注解只需要实现接口__  __`Xan\Type\Annotation\Annotation`__ ，然后实现接口方法： __`input`__  即可，本功能需要使用内置的 __`自动加载引擎`__ 才可以，如下：
 
 __`index.php`__ 文件代码如下：
 
