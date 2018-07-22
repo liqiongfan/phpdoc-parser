@@ -24,26 +24,25 @@ class A
 
 ##  注解初始化类属性
 
-当前的版本中，可以使用注解来进行类常量与属性的添加，注解类属性依次来完成功能，目前注解类已经实现 __`ConstAnnotation`__ 与 __`AttrAnnotation`__ ，用来初始化类的常量与普通的属性，本功能需要使用内置的自动加载引擎才可以，如下：
+目前注解类已经在__`C`__语言底层实现 __`ConstAnnotation`__ 与 __`AttrAnnotation`__ ，用来初始化类的常量与普通的属性，但是__用户可以自定义注解只需要实现接口__ __`Xan\Type\Annotation\Annotation`__，然后实现接口方法：__`input`__ 即可，本功能需要使用内置的__`自动加载引擎`__才可以，如下：
 
 __`index.php`__ 文件代码如下：
 
 ```php
 // 使用 Xan\Loader 加载引擎完成类的自动加载功能
 $loader = new \Xan\Loader();
-
 // 当前的 app 命名空间是当前文件夹
 // 本方法可以多次调用来生成多个命名空间，优先级的顺序越来越低
 $loader->setMap('@app', __DIR__);
-
 $loader->autoLoad();
-
 
 // 开始使用注解功能
 $base = new app\Base();
 
-echo app\Base::TOOL . '<=>' . app\Base::URL;
-echo $base->name . '<=>' . $base->version . PHP_EOL;
+echo "TOOL常量：" . app\Base::TOOL;
+echo "URL常量：" . app\Base::URL;
+echo "name属性：" . $base->name;
+echo "version属性：" . $base->version;
 ```
 
 __`app\Base`__ 类的代码如下(文件命名为：__`Base.php`__)：
@@ -100,6 +99,7 @@ echo "xannotation.so" >> /usr/path_to_php/php.ini
 
 ## 简洁的APIs ##
 
+#### 注解Xan
 
 **Xan 类构造函数**
 

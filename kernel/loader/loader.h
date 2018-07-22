@@ -28,7 +28,8 @@ void get_current_cwd(char *path);
 void require_php_file(char *file_name);
 void reverse_zend_string_slash(zend_string *string);
 void auto_load_classfile(zend_string *file, zval *aliases);
-void init_class_with_annotations(zend_string *class_name);
+void only_auto_load_file(zend_string *file, zval *aliases);
+void init_class_with_annotations(zend_string *class_name, zval *aliases);
 extern zend_class_entry *loader_ce;
 
 #endif /*XAN_LOADER_H*/

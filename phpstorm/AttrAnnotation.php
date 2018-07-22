@@ -18,7 +18,7 @@ namespace Xan\Type\Annotation;
  *
  * @package Xan\Type\Annotation
  */
-class AttrAnnotation
+class AttrAnnotation implements Annotation
 {
     public function input($classEntry, $annotations)
     {

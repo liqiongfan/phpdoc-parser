@@ -73,13 +73,14 @@ ZEND_TSRMLS_CACHE_EXTERN()
 #define XAN_AB_ME                 PHP_ABSTRACT_ME
 #define XAN_METHOD                PHP_METHOD
 #define XAN_INIT(name)            void name##_init()
-#define ARGINFO(name)                 arginfo_##name
+#define ARGINFO(name)             arginfo_##name
 
 #define XAN_FUNCTIONS(name)       \
     static const zend_function_entry name##_functions[] = {
 #define XAN_FUNCTIONS_END()       PHP_FE_END };
 #define XAN_THREAD_FUNC(name)     void *thread_##name(void *arg)
 
+#define XAN_ANNOTATIONS     "Xan\\Type\\Annotation\\"
 #define XAN_INFO(type, info...)   php_error_docref(NULL, type, ##info)
 #define XAN_ENTRY_OBJ(obj)             (Z_OBJCE_P(obj)),(obj)
 #define XAN_FOREACH_STR_VAL(ht, key, value) ZEND_HASH_FOREACH_STR_KEY_VAL(ht, key, value)
