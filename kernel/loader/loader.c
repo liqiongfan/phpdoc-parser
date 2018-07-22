@@ -332,6 +332,7 @@ again:
             }
             if ( !instanceof_function(o_ce, annotation_ce) )
             {
+                zend_array_destroy(Z_ARRVAL(annotations));
                 XAN_INFO(E_ERROR, "Annotation class : `%s` must be implemented from Annotation interface!", ZSTR_VAL(annotation_class_name) );
                 return ;
             }
@@ -340,6 +341,8 @@ again:
         }
 
     } ZEND_HASH_FOREACH_END();
+
+    zend_array_destroy(Z_ARRVAL(annotations));
 }/*}}}*/
 
 /**
