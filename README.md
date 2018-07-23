@@ -34,7 +34,7 @@ $loader = new \Xan\Loader();
 // 当前的 app 命名空间是当前文件夹
 // 本方法可以多次调用来生成多个命名空间，优先级的顺序越来越低
 $loader->setMap('@app', __DIR__);
-$loader->autoLoad();
+$loader->start();
 
 // 开始使用注解功能
 $base = new app\Base();
@@ -280,7 +280,7 @@ class Loader
 }
 ```
 
-**启动自动加载：Xan\Loader::autoLoad($prepend = false)**
+**启动自动加载：Xan\Loader::start($prepend = false)**
 
 ```php
 namespace Xan;
