@@ -118,6 +118,12 @@ class Basic
     
     /**
      * 定义通知
+     * 通知支持传递参数到指定的切入点，如需指定参数，那么必须使用
+     * (value="xxx.xxx", parameters="xxx||xxx||xxx")
+     * 的方式来指定通知，
+     * 通知的value表示切入点，分别是类名 + "." + 方法名
+     * 通知的parameters表示参数，多个参数使用 "||"分割
+     * 
      * @before("Base.before")
      * @after(value="Base.after", parameters="Xan Extension")
      * @success("Base.success")
