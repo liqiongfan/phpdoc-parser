@@ -39,20 +39,20 @@ extern zend_module_entry xannotation_module_entry;
 #endif
 
 /*
-  	Declare any global variables you may need between the BEGIN
-	and END macros here:
+      Declare any global variables you may need between the BEGIN
+    and END macros here:
+*/
 
 ZEND_BEGIN_MODULE_GLOBALS(xannotation)
-	zend_long  global_value;
-	char *global_string;
+    zval aliases;
+    zval class_di;
 ZEND_END_MODULE_GLOBALS(xannotation)
-*/
 
 /* Always refer to the globals in your function as XANNOTATION_G(variable).
    You are encouraged to rename these macros something shorter, see
    examples in any other php module directory.
 */
-#define XANNOTATION_G(v) ZEND_MODULE_GLOBALS_ACCESSOR(xannotation, v)
+#define XAN_G(v) ZEND_MODULE_GLOBALS_ACCESSOR(xannotation, v)
 
 #if defined(ZTS) && defined(COMPILE_DL_XANNOTATION)
 ZEND_TSRMLS_CACHE_EXTERN()
@@ -99,8 +99,11 @@ ZEND_TSRMLS_CACHE_EXTERN()
 #define XAN_STRL(str)                  (str),(sizeof(str)-1)
 #define XAN_STRS(str)                  (str),(sizeof(str))
 #define XAN_CHECK_METHOD(object, method_name)           ( ( Z_OBJ_HT_P(object)->get_method(&Z_OBJ_P(object),\
-                                                        zend_string_init(XAN_STRL(method_name), 0), NULL)) != NULL )
+                                                        strpprintf(0, "%s", XAN_STRL(method_name)), NULL)) )
 /*}}}*/
+
+
+extern ZEND_DECLARE_MODULE_GLOBALS(xannotation);
 
 #endif	/* PHP_XANNOTATION_H */
 

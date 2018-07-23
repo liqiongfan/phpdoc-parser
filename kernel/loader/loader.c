@@ -62,8 +62,7 @@ ZEND_END_ARG_INFO()
  */
 XAN_METHOD(Loader, __construct)
 {
-    zval *aliases = zend_read_property(XAN_ENTRY_OBJ(getThis()), XAN_STRL(ALL_ALIAS), 1, NULL);
-    array_init(aliases);
+    array_init(&XAN_G(aliases));
 }/*}}}*/
 
 /**
@@ -85,9 +84,7 @@ XAN_METHOD(Loader, setMap)
         XAN_INFO(E_ERROR, "$aliasName must be start with `@`!");
     }
 
-    zval *aliases = zend_read_property(XAN_ENTRY_OBJ(getThis()), XAN_STRL(ALL_ALIAS), 1, NULL);
-
-    add_assoc_str(aliases, ZSTR_VAL(alias_name) + 1, alias_path);
+    add_assoc_str(&XAN_G(aliases), ZSTR_VAL(alias_name) + 1, alias_path);
 
     RETURN_TRUE;
 }/*}}}*/
@@ -106,17 +103,15 @@ XAN_METHOD(Loader, loader)
         return ;
     }
 
-    zval *aliases = zend_read_property(XAN_ENTRY_OBJ(getThis()), XAN_STRL(ALL_ALIAS), 1, NULL);
-    
-    auto_load_classfile(class_name, aliases);
+    auto_load_classfile(class_name, &XAN_G(aliases));
 }/*}}}*/
 
 /**
  * {{{ proto
- * Loader::autoLoad([$prepend = false])
+ * Loader::start([$prepend = false])
  * Start the autoload step
  */
-XAN_METHOD(Loader, autoLoad)
+XAN_METHOD(Loader, start)
 {
     zval zcallback, zprepend, zfunc_name, retval, zshow;
     zend_bool prepend = 0;
@@ -154,7 +149,7 @@ XAN_FUNCTIONS(loader)
     XAN_ME(Loader, __construct, arginfo_xan_loader_construct, ZEND_ACC_PUBLIC)
     XAN_ME(Loader, setMap, arginfo_xan_loader_set_map, ZEND_ACC_PUBLIC)
     XAN_ME(Loader, loader, arginfo_xan_loader_loader, ZEND_ACC_PRIVATE | ZEND_ACC_FINAL)
-    XAN_ME(Loader, autoLoad, arginfo_xan_loader_auto_load, ZEND_ACC_PUBLIC | ZEND_ACC_FINAL)
+    XAN_ME(Loader, start, arginfo_xan_loader_auto_load, ZEND_ACC_PUBLIC | ZEND_ACC_FINAL)
 XAN_FUNCTIONS_END()
 /*}}}*/
 

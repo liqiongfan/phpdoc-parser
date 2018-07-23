@@ -12,28 +12,28 @@
   | obtain it through the world-wide-web, please send a note to          |
   | license@php.net so we can mail you a copy immediately.               |
   +----------------------------------------------------------------------+
-  | Author: Josin                                                        |
+  | Author:  Josin                                                       |
   +----------------------------------------------------------------------+
 */
 
 /* $Id$ */
+#ifndef XAN_PROXY_H
+#define XAN_PROXY_H
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+#define CLASS_CE "__class_ce"
+#define CLASS_DI "__class_di"
 
-#include "php.h"
-#include "php_ini.h"
-#include "ext/standard/info.h"
-#include "php_xannotation.h"
+#define VALUE    "value"
+#define PARAMETERS "parameters"
 
-zend_class_entry *xan_ce;
-zend_class_entry *proxy_ce;
-zend_class_entry *loader_ce;
-zend_class_entry *annotation_ce;
-zend_class_entry *class_attr_ce;
-zend_class_entry *class_const_ce;
-zend_class_entry *config_class_ce;
+extern zend_class_entry *proxy_ce;
+void run_method(zval *function_value, zval *retval);
+void get_object_from_di(zval *di, zend_string *class_name, zval *class_obj, zend_class_entry *ce);
+void call_method_with_object_params( zval *object, char *method_name, zval *parameters, zval *ret_val );
+void call_method_with_object(zval *object, char *method_name, uint32_t param_counts, zval params[], zval *ret_val);
+
+#endif /*XAN_PROXY_H*/
+
 
 /*
  * Local variables:

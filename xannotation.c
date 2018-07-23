@@ -29,8 +29,8 @@
 #include "Zend/zend_interfaces.h"
 
 /* If you declare any globals in php_xannotation.h uncomment this:
-ZEND_DECLARE_MODULE_GLOBALS(xannotation)
 */
+ZEND_DECLARE_MODULE_GLOBALS(xannotation)
 
 /* True global resources - no need for thread safety here */
 static int le_xannotation;
@@ -40,6 +40,7 @@ static int le_xannotation;
  */
 XAN_INIT(xan);
 XAN_INIT(loader);
+XAN_INIT(aop_proxy);
 XAN_INIT(annotation);
 XAN_INIT(config_class);
 XAN_INIT(attr_annotation);
@@ -79,22 +80,6 @@ PHP_FUNCTION(get_xan_version)
    follow this convention for the convenience of others editing your code.
 */
 
-/**
- * {{{ proto replace_ce
- */
-PHP_FUNCTION(replace_ce)
-{
-	zend_class_entry *ce = zend_hash_str_find_ptr(CG(class_table), XAN_STRL("base"));
-	if ( !ce )
-	{
-		XAN_INFO(E_ERROR, "Class %s not found.");
-	}
-
-	zval value;
-	ZVAL_STRING(&value, "world");
-	zend_declare_property_ex(ce, strpprintf(0, "%s", "hello"), &value, ZEND_ACC_PUBLIC, NULL );
-}/*}}}*/
-
 /* {{{ php_xannotation_init_globals
  */
 /* Uncomment this function if you have INI entries
@@ -110,8 +95,12 @@ static void php_xannotation_init_globals(zend_xannotation_globals *xannotation_g
  */
 PHP_MINIT_FUNCTION(xannotation)
 {
+#if defined(COMPILE_DL_XANNOTATION) && defined(ZTS)
+    ZEND_INIT_MODULE_GLOBALS(xannotation, NULL, NULL);
+#endif
 	xan_init();
 	loader_init();
+	aop_proxy_init();
 	annotation_init();
 	config_class_init();
 	attr_annotation_init();
@@ -140,6 +129,8 @@ PHP_RINIT_FUNCTION(xannotation)
 #if defined(COMPILE_DL_XANNOTATION) && defined(ZTS)
 	ZEND_TSRMLS_CACHE_UPDATE();
 #endif
+
+	ZVAL_NULL(&XAN_G(class_di));
 	return SUCCESS;
 }
 /* }}} */
@@ -172,9 +163,8 @@ PHP_MINFO_FUNCTION(xannotation)
  * Every user visible function must have an entry in xannotation_functions[].
  */
 const zend_function_entry xannotation_functions[] = {
-	PHP_FE(get_xan_version,	NULL)		/* For testing, remove later. */
-	PHP_FE(replace_ce,	    NULL)		/* For testing, remove later. */
-	PHP_FE_END	/* Must be the last line in xannotation_functions[] */
+	PHP_FE(get_xan_version,	NULL)
+	PHP_FE_END
 };
 /* }}} */
 

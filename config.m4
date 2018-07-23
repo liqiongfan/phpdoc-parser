@@ -65,6 +65,7 @@ if test "$PHP_XANNOTATION" != "no"; then
     kernel/xan_class.c            \
     kernel/loader/loader.c        \
     kernel/class/config_class.c   \
+    kernel/class/aop/proxy.c      \
     kernel/class/annotation/class_attr.c    \
     kernel/class/annotation/class_const.c   \
     kernel/class/annotation/annotation.c    \

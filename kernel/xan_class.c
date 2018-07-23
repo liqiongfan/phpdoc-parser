@@ -559,6 +559,11 @@ void get_doc_comment_result(zval *retval, zend_string *doc_comment)
         }
     }
 
+    if (sig_start == 0)
+    {
+        comment_body_end = strlen(comments) - 1;
+    }
+
     add_assoc_zval(retval, "annotations", &anno);
     add_assoc_long(retval, "num", zend_hash_num_elements(Z_ARRVAL(anno)));
 
