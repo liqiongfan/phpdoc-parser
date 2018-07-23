@@ -160,6 +160,7 @@ XAN_METHOD(AopProxy, __call)
             
             run_method(before_func_name, return_value);
             
+            ZVAL_TRUE(&ret_val);
             call_method_with_object_params( &caller_obj, ZSTR_VAL(zend_string_tolower(function_name)), parameters, &ret_val );
 
             if (Z_TYPE_INFO(ret_val) == IS_TRUE)
