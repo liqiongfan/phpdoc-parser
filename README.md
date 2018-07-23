@@ -125,6 +125,8 @@ class Basic
     function test()
     {
         echo 'I\'m the test method for Aspect programming.';
+        // 返回true，那么AOP执行 success通知，否则执行 failure 通知
+        return true;
     }    
 }
 
