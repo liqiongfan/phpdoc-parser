@@ -52,8 +52,18 @@ ZEND_BEGIN_ARG_INFO_EX(ARGINFO(xan_class_get_parse_result), 0, 0, 1)
     ZEND_ARG_INFO(0, docComment)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO_EX(ARGINFO(xan_class_parse_all_methods_doc_comment), 0, 0, 1)
+ZEND_BEGIN_ARG_INFO_EX(ARGINFO(xan_class_get_all_methods_doc_comment), 0, 0, 1)
     ZEND_ARG_INFO(0, objectOrName)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(ARGINFO(xan_class_get_attr_doc_comment), 0, 0, 2)
+    ZEND_ARG_INFO(0, className)
+    ZEND_ARG_INFO(0, attrName)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(ARGINFO(xan_class_get_const_doc_comment), 0, 0, 2)
+    ZEND_ARG_INFO(0, className)
+    ZEND_ARG_INFO(0, constName)
 ZEND_END_ARG_INFO()
 /*}}}*/
 
@@ -150,6 +160,11 @@ XAN_METHOD(Xan, parseDocComment)
     {
         return ;
     }
+
+    if ( !ZSTR_LEN(doc_comment) || !doc_comment )
+    {
+        XAN_INFO(E_ERROR, "$docComment must be valid.");
+    }
     
     zend_object *retval = zend_objects_clone_obj(getThis());
     ZVAL_OBJ(&zretval, retval);
@@ -170,6 +185,12 @@ XAN_METHOD(Xan, getParseResult)
         return ;
     }
 
+    if ( !ZSTR_LEN(doc_comment) || !doc_comment )
+    {
+        XAN_INFO(E_ERROR, "$docComment must be valid.");
+    }
+    
+
     zval retval;
     array_init(&retval);
 
@@ -179,23 +200,10 @@ XAN_METHOD(Xan, getParseResult)
 }/*}}}*/
 
 /**
- * {{{ proto Xan::parseAllMethodsDocComment($objectOrName)
+ * {{{ proto Xan::getAllMethodsDocComment($objectOrName)
  * Parsing all methods doc-comment for the given class or object
- * Result is an object which contains the following format:
- * Object
- * {
- *     'annotations' => [
- *         'world' => [
- *             'annotations' => [],
- *             'num' => '',
- *             'body' => ''
- *         ]
- *         'xxx' => []
- *     ],
- *     'num' => 3
- * }
  */
-XAN_METHOD(Xan, parseAllMethodsDocComment)
+XAN_METHOD(Xan, getAllMethodsDocComment)
 {
     zend_class_entry *ce;
     zend_function *each_func;
@@ -241,6 +249,62 @@ XAN_METHOD(Xan, parseAllMethodsDocComment)
 }/*}}}*/
 
 /**
+ * {{{
+ * proto Xan::getAttrDocComment($className, $attrName)
+ */
+XAN_METHOD(Xan, getAttrDocComment)
+{
+    zend_string *class_name, *attr_name;
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "SS", &class_name, &attr_name) == FAILURE)
+    {
+        return ;
+    }
+    if ( !ZSTR_LEN(class_name) || !ZSTR_LEN(attr_name) )
+    {
+        XAN_INFO(E_ERROR, "Parameters $className or $attrName invalid.");
+    }
+    zend_class_entry *ce = zend_lookup_class(class_name);
+    if ( !ce )
+    {
+        XAN_INFO(E_ERROR, "Class `%s` not found.", ZSTR_VAL(class_name));
+    }
+    zend_property_info *p_info = zend_hash_str_find_ptr(&ce->properties_info, ZSTR_VAL(attr_name), ZSTR_LEN(attr_name));
+    if ( !p_info )
+    {
+        XAN_INFO(E_ERROR, "Property `%s` not found!", ZSTR_VAL(attr_name));
+    }
+    RETURN_STR(p_info->doc_comment);
+}/*}}}*/
+
+/**
+ * {{{
+ * proto Xan::getConstDocComment($className, $attrName)
+ */
+XAN_METHOD(Xan, getConstDocComment)
+{
+    zend_string *class_name, *const_name;
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "SS", &class_name, &const_name) == FAILURE)
+    {
+        return ;
+    }
+    if ( !ZSTR_LEN(class_name) || !ZSTR_LEN(const_name) )
+    {
+        XAN_INFO(E_ERROR, "Parameters $className or $constName invalid.");
+    }
+    zend_class_entry *ce = zend_lookup_class(class_name);
+    if ( !ce )
+    {
+        XAN_INFO(E_ERROR, "Class `%s` not found.", ZSTR_VAL(class_name));
+    }
+    zend_class_constant *class_constant = zend_hash_str_find_ptr(&ce->constants_table, ZSTR_VAL(const_name), ZSTR_LEN(const_name));
+    if ( !class_constant )
+    {
+        XAN_INFO(E_ERROR, "Const property `%s` not found!", ZSTR_VAL(const_name));
+    }
+    RETURN_STR(class_constant->doc_comment);
+}/*}}}*/
+
+/**
  * {{{ 
  * All functions to the Xan class
  */
@@ -250,7 +314,9 @@ XAN_FUNCTIONS(xan)
     XAN_ME(Xan, getMethodDocComment, arginfo_xan_class_get_method_doc_comment, ZEND_ACC_PUBLIC)
     XAN_ME(Xan, parseDocComment, arginfo_xan_class_parse_doc_comment,  ZEND_ACC_PUBLIC)
     XAN_ME(Xan, getParseResult, arginfo_xan_class_get_parse_result,  ZEND_ACC_PUBLIC)
-    XAN_ME(Xan, parseAllMethodsDocComment, arginfo_xan_class_parse_all_methods_doc_comment,  ZEND_ACC_PUBLIC)
+    XAN_ME(Xan, getAllMethodsDocComment, arginfo_xan_class_get_all_methods_doc_comment,  ZEND_ACC_PUBLIC)
+    XAN_ME(Xan, getAttrDocComment, arginfo_xan_class_get_attr_doc_comment, ZEND_ACC_PUBLIC)
+    XAN_ME(Xan, getConstDocComment, arginfo_xan_class_get_const_doc_comment, ZEND_ACC_PUBLIC)
 XAN_FUNCTIONS_END() /*}}}*/
 
 /**
@@ -300,19 +366,35 @@ static void parse_line_comment(zval *retval, char *str)
     zend_long ukey;
     zval temp_array, *value;
     char anno_name[1024] = {0}, anno_attr[1024] = {0}, anno_key[1024] = {0}, anno_value[1024] = {0};
-    size_t index = 0, para_left = 0, para_right = 0, c_index = 0, default_value = 1;
+    size_t index = 0, para_left = 0, para_right = 0, c_index = 0, default_value = 1, in_quote = 0;
     for( str = str + 1; index < strlen(str); index++)
     {
-        if (str[index] == '(')
+        if ( str[index] == '(' && para_left == 0 )
         {
             para_left = index;
             memcpy(anno_name, str, index);
         }
-        if (str[index] == ')')
+
+        if ( para_left && (str[index] == '"' || str[index] == '\'') )
         {
-            para_right = index;
-            break;
+            if ( in_quote ) in_quote = 0;
+            else in_quote = 1;
         }
+
+        if ( !in_quote )
+        {
+            if (str[index] == ')' && (index == strlen(str) - 1))
+            {
+                para_right = index;
+                break;
+            }
+        }
+    }
+
+    if ( in_quote && ( para_left || !para_right ) )
+    {
+        add_assoc_null(retval, anno_name);
+        return ;
     }
 
     if ( (para_left == 0) && (para_right == 0))
@@ -322,11 +404,7 @@ static void parse_line_comment(zval *retval, char *str)
         add_assoc_null(retval, anno_attr);
         return ;
     }
-    else if ( (para_left != 0 && para_right == 0) )
-    {
-        ZVAL_NULL(retval);
-        return ;
-    }
+
     memcpy(anno_attr, str + para_left + 1, para_right - para_left - 1);
     
     array_init(&temp_array);
@@ -347,12 +425,12 @@ static void parse_line_comment(zval *retval, char *str)
                 memcpy(anno_value, ZSTR_VAL(trim_value) + c_index + 1, ZSTR_LEN(trim_value) - c_index - 1);
 
                 add_assoc_str(&temp_array, ZSTR_VAL( php_trim(strpprintf(0, "%s", anno_key), XAN_STRL(" \""), 3)), 
-                    php_trim(strpprintf(0, "%s", anno_value), XAN_STRL(" \""), 3));
+                    php_trim(strpprintf(0, "%s", anno_value), XAN_STRL(" \"'"), 3));
             }
         }
         if (default_value)
         {
-            add_next_index_str(&temp_array, php_trim(trim_value, XAN_STRL(" \""), 3));
+            add_next_index_str(&temp_array, php_trim(trim_value, XAN_STRL(" \"'"), 3));
         }
         
         zend_hash_index_del(Z_ARRVAL(temp_array), ukey);
@@ -371,9 +449,8 @@ static void parse_line_comment(zval *retval, char *str)
  */
 void parse_doc_comment(zval *object, zend_string *doc_comment)
 {
-    if ( !ZSTR_LEN(doc_comment) )
+    if ( !doc_comment || !ZSTR_LEN(doc_comment) )
     {
-        XAN_INFO(E_ERROR, "$docComment empty.");
         return ;
     }
 
@@ -439,14 +516,11 @@ void get_doc_comment_result(zval *retval, zend_string *doc_comment)
 {
     if (Z_TYPE_P(retval) != IS_ARRAY)
     {
-        ZVAL_NULL(retval);
         return ;
     }
 
-    if ( !ZSTR_LEN(doc_comment) )
+    if ( !doc_comment || !ZSTR_LEN(doc_comment) )
     {
-        ZVAL_NULL(retval);
-        XAN_INFO(E_ERROR, "$docComment empty.");
         return ;
     }
 
