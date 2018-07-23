@@ -70,6 +70,71 @@ class Base
   +++Base.php
 ```
 
+## AOP切面思想 ##
+
+__切面思想__：将那些与业务无关，却为业务模块所共同调用的逻辑或责任封装起来，便于减少系统的重复代码，降低 模块间的耦合度，并有利于未来的可操作性和可维护性；AOP是一个横向的关系组合，也就是将应用中的公共服务进行分离。
+
+__重要概念：__
+
+1、__连接点__，程序的一个执行点，__Xan__中仅支持方法级别的连接点
+
+2、__切入点__，捕获连接点的结构，一般可以通过正则匹配或者表达式，目前 __Xan__并不支持
+
+3、__通知__，切入点的业务逻辑代码
+
+4、__切面__，定义一个切面类，使用注解： __`@Aspect`__来定义一个切面
+
+5、__引入__，通过引入附加的属性等，达到修改对象或者类结构的目的，目前 __Xan__可以通过注解 __AttrAnnotation__ 与  __ConstAnnotation__ 来完成此功能
+
+**简单示例：**
+
+```php
+/**
+ * 定义一个切面类
+ *
+ * @Aspect
+ */
+class Basic
+{
+    function before()
+    {
+        echo 'before';
+    }
+    
+    function after($data)
+    {
+    	echo 'after =>' . $data;    
+    }
+    
+    function success()
+    {
+        echo 'success';
+    }
+    
+    function failure()
+    {
+        echo 'failure';
+    }
+    
+    /**
+     * 定义通知
+     * @before("Base.before")
+     * @after(value="Base.after", parameters="Xan Extension")
+     * @success("Base.success")
+     */
+    function test()
+    {
+        echo 'I\'m the test method for Aspect programming.';
+    }    
+}
+
+// 实例化代理，代理返回的对象可以当做常规对象(new生成的对象一样)使用
+$base = Xan\Aop\Proxy::instance(Base::class);
+
+// 调用方法
+$base->test();
+```
+
 ## 支持环境 ##
 
 ```>= PHP7.0```

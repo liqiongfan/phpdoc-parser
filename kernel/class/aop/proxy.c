@@ -53,6 +53,15 @@ ZEND_BEGIN_ARG_INFO_EX(ARGINFO(xan_aop_proxy_call), 0, 0, 2)
     ZEND_ARG_INFO(0, functionParameters)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(ARGINFO(xan_aop_proxy_get), 0, 0, 1)
+    ZEND_ARG_INFO(0, attrName)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(ARGINFO(xan_aop_proxy_set), 0, 0, 2)
+    ZEND_ARG_INFO(0, attrName)
+    ZEND_ARG_INFO(0, attrValue)
+ZEND_END_ARG_INFO()
+
 /**
  * {{{ proto AopProxy::__construct()
  */
@@ -172,10 +181,87 @@ exit_no_annotation:
     call_method_with_object_params( &caller_obj, ZSTR_VAL(zend_string_tolower(function_name)), parameters, return_value );
 }
 
+/**
+ * {{{
+ * proto AopProxy::__set($attrName, $attrValue)
+ */
+XAN_METHOD(AopProxy, __set)
+{
+    zend_string *key;
+    zval *value, class_obj, z_key;
+
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "Sz", &key, &value) == FAILURE)
+    {
+        return ;
+    }
+
+    /* The class container:`&XAN_G(class_di)` */
+    if (ZVAL_IS_NULL(&XAN_G(class_di)))
+    {
+        array_init(&XAN_G(class_di));
+    }
+
+    /* Proxy class */
+    zval *class_name = zend_read_property(XAN_ENTRY_OBJ(getThis()), XAN_STRL(CLASS_CE), 1, NULL);
+    if ( !class_name )
+    {
+        XAN_INFO(E_ERROR, "Please use the `instance` to get an object proxy.");
+    }
+    /* Proxy class_entry */
+    zend_class_entry *ce = zend_lookup_class(zend_string_tolower(Z_STR_P(class_name)));
+    if ( !ce )
+    {
+        XAN_INFO(E_ERROR, "Class `%s` not found.", Z_STRVAL_P(class_name));
+    }
+
+    get_object_from_di(&XAN_G(class_di), Z_STR_P(class_name), &class_obj, ce);
+
+    ZVAL_STR(&z_key, key);
+    Z_OBJ(class_obj)->handlers->write_property(&class_obj, &z_key, value, NULL);
+}/*}}}*/
+
+/**
+ * {{{ proto AopProxy::__get($attrName)
+ */
+XAN_METHOD(AopProxy, __get)
+{
+    zval class_obj, z_key;
+    zend_string *key;
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "S", &key) ==FAILURE)
+    {
+        return ;
+    }
+
+    /* The class container:`&XAN_G(class_di)` */
+    if (ZVAL_IS_NULL(&XAN_G(class_di)))
+    {
+        array_init(&XAN_G(class_di));
+    }
+    /* Proxy class */
+    zval *class_name = zend_read_property(XAN_ENTRY_OBJ(getThis()), XAN_STRL(CLASS_CE), 1, NULL);
+    if ( !class_name )
+    {
+        XAN_INFO(E_ERROR, "Please use the `instance` to get an object proxy.");
+    }
+    /* Proxy class_entry */
+    zend_class_entry *ce = zend_lookup_class(zend_string_tolower(Z_STR_P(class_name)));
+    if ( !ce )
+    {
+        XAN_INFO(E_ERROR, "Class `%s` not found.", Z_STRVAL_P(class_name));
+    }
+
+    get_object_from_di(&XAN_G(class_di), Z_STR_P(class_name), &class_obj, ce);
+    
+    ZVAL_STR(&z_key, key);
+    RETURN_ZVAL( Z_OBJ(class_obj)->handlers->read_property(&class_obj, &z_key, BP_VAR_IS, NULL, NULL), 1, NULL);
+}/*}}}*/
+
 XAN_FUNCTIONS(aop_proxy)
     XAN_ME(AopProxy, __construct, arginfo_xan_aop_proxy_construct, ZEND_ACC_PRIVATE)
     XAN_ME(AopProxy, instance, arginfo_xan_aop_proxy_instance, ZEND_ACC_PUBLIC | ZEND_ACC_STATIC)
     XAN_ME(AopProxy, __call, arginfo_xan_aop_proxy_call, ZEND_ACC_PUBLIC)
+    XAN_ME(AopProxy, __get, arginfo_xan_aop_proxy_get, ZEND_ACC_PUBLIC | ZEND_ACC_FINAL)
+    XAN_ME(AopProxy, __set, arginfo_xan_aop_proxy_set, ZEND_ACC_PUBLIC | ZEND_ACC_FINAL)
 XAN_FUNCTIONS_END()
 
 /**
