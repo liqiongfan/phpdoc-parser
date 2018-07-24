@@ -29,7 +29,6 @@
 #include "ext/standard/php_string.h"
 #include "kernel/class/annotation/annotation.h"
 #include "kernel/class/annotation/class_attr.h"
-#include "Zend/zend_inheritance.h"
 
 /**
  * {{{

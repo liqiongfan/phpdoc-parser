@@ -356,6 +356,8 @@ zend_string *get_function_doc_comment(zend_op_array *op_array)
 /**
  * {{{ proto parse_line_comment(zval *retval, char *str)
  * Parsing the str such as : '@type(value="", age="")
+ * retval means the return result:
+ * so it can be the object of the Xan or the array
  */
 static void parse_line_comment(zval *retval, char *str)
 {
@@ -363,6 +365,9 @@ static void parse_line_comment(zval *retval, char *str)
     zval temp_array, *value;
     char anno_name[1024] = {0}, anno_attr[1024] = {0}, anno_key[1024] = {0}, anno_value[1024] = {0};
     size_t index = 0, para_left = 0, para_right = 0, c_index = 0, default_value = 1, in_quote = 0;
+    
+    array_init(&temp_array);
+    
     for( str = str + 1; index < strlen(str); index++)
     {
         if ( str[index] == '(' && para_left == 0 )
@@ -397,6 +402,7 @@ static void parse_line_comment(zval *retval, char *str)
     {
         if (*anno_name != '\0')
             add_assoc_null(retval, anno_name);
+        
         return ;
     }
 
@@ -405,17 +411,19 @@ static void parse_line_comment(zval *retval, char *str)
         para_right = strlen(str);
         memcpy(anno_attr, str + para_left, para_right - para_left);
         add_assoc_null(retval, anno_attr);
-        return ;
+        
+        return; 
     }
 
     memcpy(anno_attr, str + para_left + 1, para_right - para_left - 1);
     
-    array_init(&temp_array);
-    php_explode(strpprintf(0, "%s", ","), strpprintf(0, "%s", anno_attr), &temp_array, ZEND_LONG_MAX);
+    php_explode(
+        strpprintf(0, "%s", ","), 
+        strpprintf(0, "%s", anno_attr), &temp_array, ZEND_LONG_MAX
+    );
 
     ZEND_HASH_FOREACH_NUM_KEY_VAL(Z_ARRVAL(temp_array), ukey, value)
     {
-        /*value = "hello world"*/
         zend_string *trim_value = php_trim( Z_STR_P(value), XAN_STRL(" "), 3 );
         for(c_index = 0; c_index < ZSTR_LEN(trim_value); c_index++)
         {
@@ -427,8 +435,11 @@ static void parse_line_comment(zval *retval, char *str)
                 memcpy(anno_key, ZSTR_VAL(trim_value), c_index);
                 memcpy(anno_value, ZSTR_VAL(trim_value) + c_index + 1, ZSTR_LEN(trim_value) - c_index - 1);
 
-                add_assoc_str(&temp_array, ZSTR_VAL( php_trim(strpprintf(0, "%s", anno_key), XAN_STRL(" \""), 3)), 
-                    php_trim(strpprintf(0, "%s", anno_value), XAN_STRL(" \"'"), 3));
+                add_assoc_str(
+                    &temp_array, 
+                    ZSTR_VAL( php_trim(strpprintf(0, "%s", anno_key), XAN_STRL(" \""), 3) ), 
+                    php_trim(strpprintf(0, "%s", anno_value), XAN_STRL(" \"'"), 3)
+                );
             }
         }
         if (default_value)
@@ -517,6 +528,9 @@ void parse_doc_comment(zval *object, zend_string *doc_comment)
     zval_ptr_dtor(&replace);
     zval_ptr_dtor(&pattern);
     write_property_to_object(object, "body", ZSTR_VAL(php_trim(Z_STR(ret), XAN_STRL(" \n*"), 3)));
+
+    zval_ptr_dtor(&anno);
+    zend_array_destroy(Z_ARRVAL(anno));
 }
 /*}}}*/
 
