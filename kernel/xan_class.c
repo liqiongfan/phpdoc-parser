@@ -457,35 +457,44 @@ void parse_doc_comment(zval *object, zend_string *doc_comment)
     zval anno, ret, func_name, pattern, replace, subject;
     char buff[1024] = {0}, body[2048] = {0};
     char *comments = ZSTR_VAL(doc_comment);
-    size_t index = 0, sig_start = 0, comment_body_start = 0, comment_body_end = 0;
+    size_t index = 0, sig_start = 0, 
+           comment_body_start = 0,
+           comment_body_end = 0, new_line = 0;
     array_init(&anno);
 
     for( ; index < ZSTR_LEN(doc_comment); index++)
     {
-        if (comments[index] == ' ' || comments[index] == '*')
+        if (comments[index] == '\n')
         {
+            if ( sig_start )
+            {
+                bzero(buff, sizeof(buff));
+                strncpy(buff, comments + sig_start, index - sig_start);
+                parse_line_comment(&anno, buff);
+            }
+            
+            new_line = 1;
+            
+            if (comment_body_start == 0)
+                comment_body_start = index;
+            
             continue;
         }
 
-        if (comments[index] == '\n' && comment_body_start == 0)
+        if ( new_line )
         {
-            comment_body_start = index;
-        }
+            if ( comments[index] == ' ' || comments[index] == '*' ) continue;
 
-        if (comments[index] == '@')
-        {
-            if (sig_start == 0)
+            if ( comments[index] == '@' )
             {
-                comment_body_end = index;
+                /* Annotations */
+                if ( sig_start == 0 )
+                    comment_body_end = index;
+                /* Annotation start */
+                sig_start = index;
             }
-            sig_start = index;
-        }
-
-        if (comments[index] == '\n' && sig_start != 0)
-        {
-            bzero(buff, sizeof(buff));
-            strncpy(buff, comments + sig_start, index - sig_start);
-            parse_line_comment(&anno, buff);
+            else
+                new_line = 0;
         }
     }
     write_zval_property_to_object(object, "annotations", &anno);
@@ -527,35 +536,44 @@ void get_doc_comment_result(zval *retval, zend_string *doc_comment)
     zval anno, ret, func_name, pattern, replace, subject;
     char buff[1024] = {0}, body[2048] = {0};
     char *comments = ZSTR_VAL(doc_comment);
-    size_t index = 0, sig_start = 0, comment_body_start = 0, comment_body_end = 0;
+    size_t index = 0, sig_start = 0, 
+           comment_body_start = 0,
+           comment_body_end = 0, new_line = 0;
     array_init(&anno);
 
     for( ; index < ZSTR_LEN(doc_comment); index++)
     {
-        if (comments[index] == ' ' || comments[index] == '*')
+        if (comments[index] == '\n')
         {
+            if ( sig_start )
+            {
+                bzero(buff, sizeof(buff));
+                strncpy(buff, comments + sig_start, index - sig_start);
+                parse_line_comment(&anno, buff);
+            }
+            
+            new_line = 1;
+            
+            if (comment_body_start == 0)
+                comment_body_start = index;
+            
             continue;
         }
 
-        if (comments[index] == '\n' && comment_body_start == 0)
+        if ( new_line )
         {
-            comment_body_start = index;
-        }
+            if ( comments[index] == ' ' || comments[index] == '*' ) continue;
 
-        if (comments[index] == '@')
-        {
-            if (sig_start == 0)
+            if ( comments[index] == '@' )
             {
-                comment_body_end = index;
+                /* Annotations */
+                if ( sig_start == 0 )
+                    comment_body_end = index;
+                /* Annotation start */
+                sig_start = index;
             }
-            sig_start = index;
-        }
-
-        if (comments[index] == '\n' && sig_start != 0)
-        {
-            bzero(buff, sizeof(buff));
-            strncpy(buff, comments + sig_start, index - sig_start);
-            parse_line_comment(&anno, buff);
+            else
+                new_line = 0;
         }
     }
 
