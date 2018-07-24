@@ -239,8 +239,13 @@ void call_method_with_object(zval *object, char *method_name, uint32_t param_cou
         call_user_function( NULL, object, &function_name, ret_val, param_counts, params );
         zval_ptr_dtor(&function_name);
     }
-}
+}/*}}}*/
 
+/**
+ * {{{
+ * call_method_with_object_params
+ * was used to call the function with some params which passed by php-array, not C array;
+ */
 void call_method_with_object_params( zval *object, char *method_name, zval *parameters, zval *ret_val )
 {
     uint32_t p_counts = zend_hash_num_elements(Z_ARRVAL_P(parameters));
@@ -316,10 +321,11 @@ void run_method(zval function_value[], zval *retval)
     {
         ZVAL_STRING(c_name, Z_STRVAL_P(c_name) + 1);
     }
-    c_ce = zend_lookup_class( zend_string_tolower(Z_STR_P(c_name)) );
 
     /* if you want like the recursive calling, use the following method code. */
 #if 0
+    c_ce = zend_lookup_class( zend_string_tolower(Z_STR_P(c_name)) );
+    
     get_object_from_di(&XAN_G(class_di), Z_STR_P(c_name), &z_obj, c_ce);
 
     call_method_with_object_params(&z_obj, Z_STRVAL_P(method_name), &func_parameters, retval);
