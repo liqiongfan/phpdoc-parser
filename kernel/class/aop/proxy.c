@@ -63,9 +63,9 @@ ZEND_BEGIN_ARG_INFO_EX(ARGINFO(xan_aop_proxy_set), 0, 0, 2)
 ZEND_END_ARG_INFO()
 
 /**
- * {{{ proto AopProxy::__construct()
+ * {{{ proto AopProxy::ZEND_CONSTRUCTOR_FUNC_NAME()
  */
-XAN_METHOD(AopProxy, __construct)
+XAN_METHOD(AopProxy, ZEND_CONSTRUCTOR_FUNC_NAME)
 { }
 /*}}}*/
 
@@ -97,7 +97,7 @@ XAN_METHOD(AopProxy, instance)
     zend_update_property_str(XAN_ENTRY_OBJ(return_value), XAN_STRL(CLASS_CE), class_name);
 }/*}}}*/
 
-XAN_METHOD(AopProxy, __call)
+XAN_METHOD(AopProxy, ZEND_CALL_FUNC_NAME)
 {
     zval *parameters;
     zend_string *function_name;
@@ -115,9 +115,9 @@ XAN_METHOD(AopProxy, __call)
 
 /**
  * {{{
- * proto AopProxy::__set($attrName, $attrValue)
+ * proto AopProxy::ZEND_SET_FUNC_NAME($attrName, $attrValue)
  */
-XAN_METHOD(AopProxy, __set)
+XAN_METHOD(AopProxy, ZEND_SET_FUNC_NAME)
 {
     zend_string *key;
     zval *value, class_obj, z_key;
@@ -153,9 +153,9 @@ XAN_METHOD(AopProxy, __set)
 }/*}}}*/
 
 /**
- * {{{ proto AopProxy::__get($attrName)
+ * {{{ proto AopProxy::ZEND_GET_FUNC_NAME($attrName)
  */
-XAN_METHOD(AopProxy, __get)
+XAN_METHOD(AopProxy, ZEND_GET_FUNC_NAME)
 {
     zval class_obj, z_key;
     zend_string *key;
@@ -189,11 +189,11 @@ XAN_METHOD(AopProxy, __get)
 }/*}}}*/
 
 XAN_FUNCTIONS(aop_proxy)
-    XAN_ME(AopProxy, __construct, arginfo_xan_aop_proxy_construct, ZEND_ACC_PRIVATE)
+    XAN_ME(AopProxy, ZEND_CONSTRUCTOR_FUNC_NAME, arginfo_xan_aop_proxy_construct, ZEND_ACC_PRIVATE)
     XAN_ME(AopProxy, instance, arginfo_xan_aop_proxy_instance, ZEND_ACC_PUBLIC | ZEND_ACC_STATIC)
-    XAN_ME(AopProxy, __call, arginfo_xan_aop_proxy_call, ZEND_ACC_PUBLIC)
-    XAN_ME(AopProxy, __get, arginfo_xan_aop_proxy_get, ZEND_ACC_PUBLIC | ZEND_ACC_FINAL)
-    XAN_ME(AopProxy, __set, arginfo_xan_aop_proxy_set, ZEND_ACC_PUBLIC | ZEND_ACC_FINAL)
+    XAN_ME(AopProxy, ZEND_CALL_FUNC_NAME, arginfo_xan_aop_proxy_call, ZEND_ACC_PUBLIC)
+    XAN_ME(AopProxy, ZEND_GET_FUNC_NAME, arginfo_xan_aop_proxy_get, ZEND_ACC_PUBLIC | ZEND_ACC_FINAL)
+    XAN_ME(AopProxy, ZEND_SET_FUNC_NAME, arginfo_xan_aop_proxy_set, ZEND_ACC_PUBLIC | ZEND_ACC_FINAL)
 XAN_FUNCTIONS_END()
 
 /**
@@ -326,7 +326,7 @@ void run_method(zval function_value[], zval *retval)
 #else
     call_annotation_function(NULL, Z_STR_P(c_name), Z_STR_P(method_name), &func_parameters, retval);
 #endif
-    
+
 }
 
 /**
