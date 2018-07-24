@@ -230,7 +230,7 @@ void get_object_from_di(zval *di, zend_string *class_name, zval *class_obj, zend
  * {{{
  * The following two function was used to call the function with the given parameters
  */
-void call_method_with_object(zval *object, char *method_name, uint32_t param_counts, zval params[], zval *ret_val)
+void call_method_with_object_array(zval *object, char *method_name, uint32_t param_counts, zval params[], zval *ret_val)
 {
     if (XAN_CHECK_METHOD(object, method_name) != NULL)
     {
@@ -243,10 +243,10 @@ void call_method_with_object(zval *object, char *method_name, uint32_t param_cou
 
 /**
  * {{{
- * call_method_with_object_params
+ * call_method_with_object_zval
  * was used to call the function with some params which passed by php-array, not C array;
  */
-void call_method_with_object_params( zval *object, char *method_name, zval *parameters, zval *ret_val )
+void call_method_with_object_zval( zval *object, char *method_name, zval *parameters TSRMLS_CC, zval *ret_val )
 {
     uint32_t p_counts = zend_hash_num_elements(Z_ARRVAL_P(parameters));
     if ( p_counts ) 
@@ -260,13 +260,13 @@ void call_method_with_object_params( zval *object, char *method_name, zval *para
             n++;
         } ZEND_HASH_FOREACH_END();
         
-        call_method_with_object( object, method_name, p_counts, params, ret_val );
+        call_method_with_object_array( object, method_name, p_counts, params, ret_val );
 
         efree(params);
     }
     else
     {
-        call_method_with_object(object, method_name, 0, NULL, ret_val);
+        call_method_with_object_array(object, method_name, 0, NULL, ret_val);
     }
 }
 /*}}}*/
@@ -280,7 +280,7 @@ void call_method_with_object_params( zval *object, char *method_name, zval *para
  */
 void run_method(zval function_value[], zval *retval)
 {
-    zval val, z_obj;
+    zval val;
     array_init(&val);
     zend_class_entry *c_ce;
     zval *fun_name, func_parameters/*In Used*/;
@@ -322,17 +322,9 @@ void run_method(zval function_value[], zval *retval)
         ZVAL_STRING(c_name, Z_STRVAL_P(c_name) + 1);
     }
 
-    /* if you want like the recursive calling, use the following method code. */
-#if 0
-    c_ce = zend_lookup_class( zend_string_tolower(Z_STR_P(c_name)) );
-    
-    get_object_from_di(&XAN_G(class_di), Z_STR_P(c_name), &z_obj, c_ce);
-
-    call_method_with_object_params(&z_obj, Z_STRVAL_P(method_name), &func_parameters, retval);
-#else
     call_annotation_function(NULL, Z_STR_P(c_name), Z_STR_P(method_name), &func_parameters, retval);
-#endif
 
+    zend_array_destroy(Z_ARRVAL(val));
 }
 
 /**
@@ -421,7 +413,7 @@ void call_annotation_function(zval *proxy_obj, zend_string *caller_class_ce, zen
             
             /*main function*/
             ZVAL_TRUE(&ret_val);
-            call_method_with_object_params( &caller_obj, ZSTR_VAL(zend_string_tolower(function_name)), parameters, &ret_val );
+            call_method_with_object_zval( &caller_obj, ZSTR_VAL(zend_string_tolower(function_name)), parameters TSRMLS_CC, &ret_val );
 
             /* success or failure function */
             if (Z_TYPE_INFO(ret_val) == IS_TRUE)
@@ -434,6 +426,8 @@ void call_annotation_function(zval *proxy_obj, zend_string *caller_class_ce, zen
                 run_method(failure_func_name, retval);
             }
 
+            zval_ptr_dtor(&ret_val);
+
             /* after */
             run_method(after_func_name, retval);
 
@@ -442,7 +436,7 @@ void call_annotation_function(zval *proxy_obj, zend_string *caller_class_ce, zen
     }
 
 exit_no_annotation:
-    call_method_with_object_params( &caller_obj, ZSTR_VAL(zend_string_tolower(function_name)), parameters, retval );
+    call_method_with_object_zval( &caller_obj, ZSTR_VAL(zend_string_tolower(function_name)), parameters TSRMLS_CC, retval TSRMLS_CC );
 }
 
 /*

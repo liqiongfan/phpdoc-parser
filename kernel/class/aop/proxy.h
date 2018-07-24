@@ -29,8 +29,8 @@
 extern zend_class_entry *proxy_ce;
 void run_method(zval *function_value, zval *retval);
 void get_object_from_di(zval *di, zend_string *class_name, zval *class_obj, zend_class_entry *ce);
-void call_method_with_object_params( zval *object, char *method_name, zval *parameters, zval *ret_val );
-void call_method_with_object(zval *object, char *method_name, uint32_t param_counts, zval params[], zval *ret_val);
+void call_method_with_object_zval( zval *object, char *method_name, zval *parameters, zval *ret_val );
+void call_method_with_object_array(zval *object, char *method_name, uint32_t param_counts, zval params[], zval *ret_val);
 void call_annotation_function(zval *proxy_obj, zend_string *caller_class_ce, zend_string *function_name, zval *parameters, zval *retval);
 
 #endif /*XAN_PROXY_H*/
