@@ -51,17 +51,19 @@ __`index.php`__ 文件代码如下：
 ```php
 // 使用 Xan\Loader 加载引擎完成类的自动加载功能
 $loader = new \Xan\Loader();
+
 // 当前的 app 命名空间是当前文件夹
 // 本方法可以多次调用来生成多个命名空间，优先级的顺序越来越低
 $loader->setMap('@app', __DIR__);
+
 $loader->start();
 
 // 开始使用注解功能
 $base = new app\Base();
 
-echo "TOOL常量：" . app\Base::TOOL;
-echo "URL常量：" . app\Base::URL;
-echo "name属性：" . $base->name;
+echo "TOOL常量："    . app\Base::TOOL;
+echo "URL常量："     . app\Base::URL;
+echo "name属性："    . $base->name;
 echo "version属性：" . $base->version;
 ```
 
@@ -96,15 +98,15 @@ __切面思想__：将那些与业务无关，却为业务模块所共同调用�
 
 __重要概念：__
 
-1、__连接点__，程序的一个执行点，__Xan__ 中仅支持方法级别的连接点
+1、 __连接点__ ，程序的一个执行点，__Xan__ 中仅支持方法级别的连接点
 
-2、__切入点__，捕获连接点的结构，一般可以通过正则匹配或者表达式，目前  __Xan__ 并不支持
+2、 __切入点__ ，捕获连接点的结构，一般可以通过正则匹配或者表达式，目前  __Xan__ 并不支持
 
-3、__通知__，切入点的业务逻辑代码，目前 __Xan__ 支持(@before, @after, @success, @failure)四种通知
+3、 __通知__ ，切入点的业务逻辑代码，目前 __Xan__ 支持(@before, @after, @success, @failure)四种通知
 
-4、__切面__，定义一个切面类，使用注解： __`@Aspect`__ 来定义一个切面
+4、 __切面__ ，定义一个切面类，使用注解： __`@Aspect`__ 来定义一个切面
 
-5、__引入__，通过引入附加的属性等，达到修改对象或者类结构的目的，目前  __Xan__ 可以通过注解 __AttrAnnotation__ 与  __ConstAnnotation__  来完成此功能
+5、 __引入__ ，通过引入附加的属性等，达到修改对象或者类结构的目的，目前  __Xan__ 可以通过注解 __AttrAnnotation__ 与  __ConstAnnotation__  来完成此功能
 
 **简单示例：**
 
@@ -139,10 +141,11 @@ class Basic
     /**
      * 定义通知
      * 通知支持传递参数到指定的切入点，如需指定参数，那么必须使用
-     * (value="xxx.xxx", parameters="xxx||xxx||xxx")
-     * 的方式来指定通知
-     * 通知的value表示切入点，分别是类名 + "." + 方法名
-     * 通知的parameters表示参数，多个参数使用 "||"分割
+     * (value="xxx.xxx", parameters="xxx||xxx||xxx")的格式来指定通知
+     * 通知的 value 表示切入点，分别是类名 + "." + 方法名
+     * 通知的 parameters 表示参数，多个参数使用 "||"分割
+     * 可以完全省略 value 与 parameters 两个参数，直接填入 “类与方法”
+     * 如下：
      * 
      * @before("Base.before")
      * @after(value="Base.after", parameters="Xan Extension")
@@ -163,7 +166,7 @@ $base = Xan\Aop\Proxy::instance(Base::class);
 $base->test();
 ```
 
-**注意：在Xan中通知是可以无止境的嵌套运行的，也就是一个通知可以嵌套运行另一个通知，每一个通知都有一个通知链，不可以进行闭合通知的，如果闭合通知，则会提示一个 Fatal Error(致命错误)**
+**注意：在Xan中通知是可以无止境的嵌套运行的，也就是一个通知可以嵌套运行另一个通知，每一个通知都有一个通知链，不可以进行闭合通知的，如果闭合通知，则会提示一个 “ Fatal Error：Recursive calling: xx::xx ” 的致命错误**
 
 ## 支持环境 ##
 
