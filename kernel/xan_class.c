@@ -190,13 +190,9 @@ XAN_METHOD(Xan, getParseResult)
         XAN_INFO(E_ERROR, "$docComment must be valid.");
     }
     
+    array_init(return_value);
 
-    zval retval;
-    array_init(&retval);
-
-    get_doc_comment_result(&retval, doc_comment);
-
-    RETURN_ZVAL(&retval, 1, NULL);
+    get_doc_comment_result(return_value, doc_comment);
 }/*}}}*/
 
 /**
