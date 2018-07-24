@@ -99,8 +99,37 @@ ZEND_TSRMLS_CACHE_EXTERN()
 #define XAN_PR_ESTRING(entry, name, type)                zend_declare_property_string(entry, XAN_STRL(name), "", type)
 #define XAN_STRL(str)                  (str),(sizeof(str)-1)
 #define XAN_STRS(str)                  (str),(sizeof(str))
-#define XAN_CHECK_METHOD(object, method_name)           ( ( Z_OBJ_HT_P(object)->get_method(&Z_OBJ_P(object),\
-                                                        strpprintf(0, "%s", XAN_STRL(method_name)), NULL)) )
+#define XAN_CHECK_METHOD(object, method_name)  \
+    ( ( Z_OBJ_HT_P(object)->get_method(&Z_OBJ_P(object), strpprintf(0, "%s", XAN_STRL(method_name)), NULL)) )
+#define ZS_LOWER zend_string_tolower
+
+#define STR_FIND_P(zv, zkey) zend_hash_find(Z_ARRVAL_P(zv), (zkey))
+#define STRING_FIND_P(zv, skey) zend_hash_str_find(Z_ARRVAL_P(zv), XAN_STRL(skey))
+#define INDEX_FIND_P(zv, ikey) zend_hash_index_find(Z_ARRVAL_P(zv), (ikey))
+
+#define STR_FIND(zv, zkey) zend_hash_find(Z_ARRVAL(zv), (zkey))
+#define STRING_FIND(zv, skey) zend_hash_str_find(Z_ARRVAL(zv), XAN_STRL(skey))
+#define INDEX_FIND(zv, ikey) zend_hash_index_find(Z_ARRVAL(zv), (ikey))
+
+#define STR_PTR_FIND_P(zv, zkey) zend_hash_find_ptr(Z_ARRVAL_P(zv), (zkey))
+#define STRING_PTR_FIND_P(zv, skey) zend_hash_str_find_ptr(Z_ARRVAL_P(zv), XAN_STRL(skey))
+#define INDEX_PTR_FIND_P(zv, ikey) zend_hash_index_find_ptr(Z_ARRVAL_P(zv), (ikey))
+
+#define STR_PTR_FIND(zv, zkey) zend_hash_find_ptr(Z_ARRVAL(zv), (zkey))
+#define STRING_PTR_FIND(zv, skey) zend_hash_str_find_ptr(Z_ARRVAL(zv), XAN_STRL(skey))
+#define INDEX_PTR_FIND(zv, ikey) zend_hash_index_find_ptr(Z_ARRVAL(zv), (ikey))
+
+#define Z_H_F_P  zend_hash_find_ptr
+#define Z_H_I_F_P zend_hash_index_find_ptr
+#define Z_H_S_F_P zend_hash_str_find_ptr
+#define Z_H_A  zend_hash_add
+#define Z_H_A_N zend_hash_add_new
+#define Z_H_A_P zend_hash_add_ptr
+#define Z_H_A_N_P zend_hash_add_new_ptr
+#define Z_H_N_E zend_hash_num_elements
+
+
+
 /*}}}*/
 
 

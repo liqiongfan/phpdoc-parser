@@ -360,7 +360,7 @@ void call_annotation_function(zval *proxy_obj, zend_string *caller_class_ce, zen
 
     /* Find whether the function be called was in chain. if exists. error info will be showed */
     zend_string *chain_method = strpprintf(0, "%s%s", Z_STRVAL(class_name), ZSTR_VAL(function_name));
-    zval *in_result = zend_hash_find( Z_ARRVAL(XAN_G(call_chain)), chain_method );
+    zval *in_result = STR_FIND( XAN_G(call_chain), chain_method );
     if ( in_result )
     {
         XAN_INFO(E_ERROR, "Recursive calling : `%s::%s`\n", Z_STRVAL(class_name), ZSTR_VAL(function_name));
@@ -384,36 +384,36 @@ void call_annotation_function(zval *proxy_obj, zend_string *caller_class_ce, zen
     array_init(&annotations);
     get_doc_comment_result(&annotations, get_class_doc_comment(ce) );
 
-    zval *class_annotations = zend_hash_str_find(Z_ARRVAL(annotations), XAN_STRL("annotations"));
+    zval *class_annotations = STRING_FIND( annotations, "annotations");
     if ( !class_annotations || ZVAL_IS_NULL(class_annotations) )
     {
         goto exit_no_annotation;
     }
-    zval *aspect = zend_hash_str_find(Z_ARRVAL_P(class_annotations), XAN_STRL("Aspect"));
+    zval *aspect = STRING_FIND_P( class_annotations, "Aspect");
     if ( aspect )
     {
         /* Found the aspect annotation */
         zend_string *func_name;
         zval func_annotations, *function_value;
-        zend_function *calling_function = zend_hash_find_ptr(&ce->function_table, zend_string_tolower(function_name));
+        zend_function *calling_function = Z_H_F_P(&ce->function_table, ZS_LOWER(function_name));
         array_init(&func_annotations);
         get_doc_comment_result(&func_annotations, get_function_doc_comment(&calling_function->op_array));
 
-        zval *all_annotations = zend_hash_str_find( Z_ARRVAL(func_annotations), XAN_STRL("annotations") );
+        zval *all_annotations = STRING_FIND( func_annotations, "annotations" );
         
-        if ( all_annotations && zend_hash_num_elements(Z_ARRVAL_P(all_annotations)))
+        if ( all_annotations && Z_H_N_E(Z_ARRVAL_P(all_annotations)))
         {
-            zval *before_func_name = zend_hash_str_find(Z_ARRVAL_P(all_annotations), XAN_STRL("before"));
-            zval *after_func_name = zend_hash_str_find(Z_ARRVAL_P(all_annotations), XAN_STRL("after"));
-            zval *success_func_name = zend_hash_str_find(Z_ARRVAL_P(all_annotations), XAN_STRL("success"));
-            zval *failure_func_name = zend_hash_str_find(Z_ARRVAL_P(all_annotations), XAN_STRL("failure"));
+            zval *before_func_name  = STRING_FIND_P(all_annotations, "before");
+            zval *after_func_name   = STRING_FIND_P(all_annotations, "after");
+            zval *success_func_name = STRING_FIND_P(all_annotations, "success");
+            zval *failure_func_name = STRING_FIND_P(all_annotations, "failure");
             
             /*before*/
             run_method(before_func_name, retval);
             
             /*main function*/
             ZVAL_TRUE(&ret_val);
-            call_method_with_object_zval( &caller_obj, ZSTR_VAL(zend_string_tolower(function_name)), parameters TSRMLS_CC, &ret_val );
+            call_method_with_object_zval( &caller_obj, ZSTR_VAL(ZS_LOWER(function_name)), parameters TSRMLS_CC, &ret_val );
 
             /* success or failure function */
             if (Z_TYPE_INFO(ret_val) == IS_TRUE)
@@ -436,7 +436,7 @@ void call_annotation_function(zval *proxy_obj, zend_string *caller_class_ce, zen
     }
 
 exit_no_annotation:
-    call_method_with_object_zval( &caller_obj, ZSTR_VAL(zend_string_tolower(function_name)), parameters TSRMLS_CC, retval TSRMLS_CC );
+    call_method_with_object_zval( &caller_obj, ZSTR_VAL(ZS_LOWER(function_name)), parameters TSRMLS_CC, retval TSRMLS_CC );
 }
 
 /*
