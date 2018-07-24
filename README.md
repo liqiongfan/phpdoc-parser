@@ -195,7 +195,7 @@ make -j && sudo make install -j
 echo "xannotation.so" >> /usr/path_to_php/php.ini
 ```
 
-## 简洁的APIs ##
+## 部分APIs ##
 
 #### 注解Xan
 
