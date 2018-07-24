@@ -128,4 +128,21 @@ final class Xan
     function parseAllMethodsDocComment($objectOrName) : this
     {
     }
+
+    /**
+     * Get the attrbute doc-comment
+     * @param $className   The class which you want to obtain from
+     * @param $attrName    The class' attribute
+     * @return string      The result
+     */
+    function getAttrDocComment($className, $attrName): string {}
+
+    /**
+     * To obtain the const attr. doc-comment
+     *
+     * @param $className   The class which you want to obtain from
+     * @param $constName   The const name which you get from the class
+     * @return string      The result string
+     */
+    function getConstDocComment($className, $constName): string {}
 }

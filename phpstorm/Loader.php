@@ -52,7 +52,7 @@ class Loader
     /**
      * Start the auto load step
      */
-    function autoLoad()
+    function start()
     {
     }
 }
