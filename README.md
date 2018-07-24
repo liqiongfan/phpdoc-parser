@@ -8,12 +8,30 @@ Author：Josin <774542602@qq.com> | <a href="https://www.supjos.cn/archives/46.h
 
 在 __Java__ 中到处可见注解的身影，如 __`@Null`__ **or** __`@NotNull`__ 等，其实注解就是一种修饰 变量、类、方法的对象，如下，注解也可以携带参数：
 
+```java
+package cn.supjos;
+
+class A
+{
+    @NotNull(age)
+    @Default(age=22, type = "Car")
+    @Set("www.supjos.cn", email="774542602@qq.com")
+    void test()
+    {
+    }
+}
+```
+
+在 __PHP__ 中由于没有语法糖的支持，只能采用注释文档的形式组成注解，如下：
+
 ```php
+<?php
+    
 class A
 {
     /**
-     * @NotNull(age)
-     * @Default(age=22, type = "Car")
+     * @NotNull
+     * @Default(age=22, sex="male")
      * @Set("www.supjos.cn", email="774542602@qq.com")
      */
     function test()
@@ -21,6 +39,8 @@ class A
     }
 }
 ```
+
+
 
 ##  注解初始化类属性
 
