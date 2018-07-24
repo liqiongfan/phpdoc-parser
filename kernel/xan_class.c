@@ -375,6 +375,12 @@ static void parse_line_comment(zval *retval, char *str)
             memcpy(anno_name, str, index);
         }
 
+        if ( str[index] == ' ' && !para_left )
+        {
+            in_quote = 1;
+            break;
+        }
+
         if ( para_left && (str[index] == '"' || str[index] == '\'') )
         {
             if ( in_quote ) in_quote = 0;
@@ -391,9 +397,10 @@ static void parse_line_comment(zval *retval, char *str)
         }
     }
 
-    if ( in_quote && ( para_left || !para_right ) )
+    if ( in_quote )
     {
-        add_assoc_null(retval, anno_name);
+        if (*anno_name != '\0')
+            add_assoc_null(retval, anno_name);
         return ;
     }
 
