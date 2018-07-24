@@ -17,23 +17,12 @@
 */
 
 /* $Id$ */
-#ifndef XAN_PROXY_H
-#define XAN_PROXY_H
+#ifndef XAN_ASPECT_H
+#define XAN_ASPECT_H
 
-#define CLASS_CE "__class_ce"
-#define CLASS_DI "__class_di"
+extern zend_class_entry *aspect_ce;
 
-#define VALUE    "value"
-#define PARAMETERS "parameters"
-
-extern zend_class_entry *proxy_ce;
-void run_method(zval *function_value, zval *retval);
-void get_object_from_di(zval *di, zend_string *class_name, zval *class_obj, zend_class_entry *ce);
-void call_method_with_object_params( zval *object, char *method_name, zval *parameters, zval *ret_val );
-void call_method_with_object(zval *object, char *method_name, uint32_t param_counts, zval params[], zval *ret_val);
-void call_annotation_function(zval *proxy_obj, zend_string *caller_class_ce, zend_string *function_name, zval *parameters, zval *retval);
-
-#endif /*XAN_PROXY_H*/
+#endif /*XAN_ASPECT_H*/
 
 
 /*

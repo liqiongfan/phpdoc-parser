@@ -99,7 +99,7 @@ XAN_METHOD(AopProxy, instance)
 
 XAN_METHOD(AopProxy, __call)
 {
-    zval *parameters, caller_obj, ret_val;
+    zval *parameters;
     zend_string *function_name;
 
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "Sa", &function_name, &parameters) == FAILURE)
@@ -107,79 +107,10 @@ XAN_METHOD(AopProxy, __call)
         return ;
     }
 
-    /* The class container:`&XAN_G(class_di)` */
-    if (ZVAL_IS_NULL(&XAN_G(class_di)))
-    {
-        array_init(&XAN_G(class_di));
-    }
+    if ( ZVAL_IS_NULL(&XAN_G(call_chain)) )
+        array_init(&XAN_G(call_chain));
 
-    /* Proxy class */
-    zval *class_name = zend_read_property(XAN_ENTRY_OBJ(getThis()), XAN_STRL(CLASS_CE), 1, NULL);
-    if ( !class_name )
-    {
-        XAN_INFO(E_ERROR, "Please use the `instance` to get an object proxy.");
-    }
-    /* Proxy class_entry */
-    zend_class_entry *ce = zend_lookup_class(zend_string_tolower(Z_STR_P(class_name)));
-    if ( !ce )
-    {
-        XAN_INFO(E_ERROR, "Class `%s` not found.", Z_STRVAL_P(class_name));
-    }
-
-    get_object_from_di(&XAN_G(class_di), Z_STR_P(class_name), &caller_obj, ce);
-
-    /* To found wheather the class is @Aspect */
-    zval annotations;
-    array_init(&annotations);
-    get_doc_comment_result(&annotations, get_class_doc_comment(ce) );
-
-    zval *class_annotations = zend_hash_str_find(Z_ARRVAL(annotations), XAN_STRL("annotations"));
-    if ( !class_annotations || ZVAL_IS_NULL(class_annotations) )
-    {
-        goto exit_no_annotation;
-    }
-
-    zval *aspect = zend_hash_str_find(Z_ARRVAL_P(class_annotations), XAN_STRL("Aspect"));
-    if ( aspect )
-    {
-        /* Found the aspect annotation */
-        zend_string *func_name;
-        zval func_annotations, *function_value;
-        zend_function *calling_function = zend_hash_find_ptr(&ce->function_table, zend_string_tolower(function_name));
-        array_init(&func_annotations);
-        get_doc_comment_result(&func_annotations, get_function_doc_comment(&calling_function->op_array));
-
-        zval *all_annotations = zend_hash_str_find( Z_ARRVAL(func_annotations), XAN_STRL("annotations") );
-        
-        if ( all_annotations && zend_hash_num_elements(Z_ARRVAL_P(all_annotations)))
-        {
-            zval *before_func_name = zend_hash_str_find(Z_ARRVAL_P(all_annotations), XAN_STRL("before"));
-            zval *after_func_name = zend_hash_str_find(Z_ARRVAL_P(all_annotations), XAN_STRL("after"));
-            zval *success_func_name = zend_hash_str_find(Z_ARRVAL_P(all_annotations), XAN_STRL("success"));
-            zval *failure_func_name = zend_hash_str_find(Z_ARRVAL_P(all_annotations), XAN_STRL("failure"));
-            
-            run_method(before_func_name, return_value);
-            
-            ZVAL_TRUE(&ret_val);
-            call_method_with_object_params( &caller_obj, ZSTR_VAL(zend_string_tolower(function_name)), parameters, &ret_val );
-
-            if (Z_TYPE_INFO(ret_val) == IS_TRUE)
-            {
-                run_method(success_func_name, return_value);
-            }
-            else
-            {
-                run_method(failure_func_name, return_value);
-            }
-
-            run_method(after_func_name, return_value);
-
-            return ;
-        }
-    }
-
-exit_no_annotation:
-    call_method_with_object_params( &caller_obj, ZSTR_VAL(zend_string_tolower(function_name)), parameters, return_value );
+    call_annotation_function(getThis(), NULL, function_name, parameters, return_value);
 }
 
 /**
@@ -279,60 +210,6 @@ XAN_INIT(aop_proxy)
 }/*}}}*/
 
 /**
- * {{{
- * run_method()
- * To run the function with the parameters
- * function_value was the array contains class name & method name concat with a `.` char
- * such as: [`Base.before`], means to run the Base class's before method
- */
-void run_method(zval *function_value, zval *retval)
-{
-    zval val, z_obj;
-    array_init(&val);
-    zend_class_entry *c_ce;
-    zval *fun_name, func_parameters/*In Used*/;
-
-    /*all parameters need to passed to the user function */
-    array_init(&func_parameters);
-
-    if ( !function_value || ZVAL_IS_NULL(function_value) ) return ;
-
-    if (zend_hash_num_elements( Z_ARRVAL_P(function_value) )  == 1 )
-    {
-        fun_name = zend_hash_index_find(Z_ARRVAL_P(function_value), 1);
-    }
-    else
-    {
-        fun_name = zend_hash_str_find( Z_ARRVAL_P(function_value), XAN_STRL(VALUE) );
-        zval *paras = zend_hash_str_find( Z_ARRVAL_P(function_value), XAN_STRL(PARAMETERS) );
-        if ( Z_STRLEN_P(paras) )
-        {
-            php_explode(strpprintf(0, "%s", "||"), Z_STR_P(paras), &func_parameters, ZEND_LONG_MAX);
-        }
-    }
-    
-    php_explode(strpprintf(0, "%s", "."), Z_STR_P(fun_name), &val, ZEND_LONG_MAX);
-    if ( zend_hash_num_elements( Z_ARRVAL(val) ) <= 1)
-        return ;
-    
-    zval *c_name = zend_hash_index_find(Z_ARRVAL(val), 0);
-    zval *method_name = zend_hash_index_find(Z_ARRVAL(val), 1);
-    
-    if (Z_STRVAL_P(c_name)[0] == '\\')
-    {
-        ZVAL_STRING(c_name, Z_STRVAL_P(c_name) + 1);
-    }
-    c_ce = zend_lookup_class( zend_string_tolower(Z_STR_P(c_name)) );
-
-    get_object_from_di(&XAN_G(class_di), Z_STR_P(c_name), &z_obj, c_ce);
-
-    if (zend_hash_num_elements(Z_ARRVAL(func_parameters)))
-        call_method_with_object_params(&z_obj, Z_STRVAL_P(method_name), &func_parameters, retval);
-    else
-        call_user_function(NULL, &z_obj, method_name, retval, 0, NULL);
-}
-
-/**
  * Get object from di when object not in di
  * create it and put it into the di
  */
@@ -388,6 +265,179 @@ void call_method_with_object_params( zval *object, char *method_name, zval *para
     }
 }
 /*}}}*/
+
+/**
+ * {{{
+ * run_method()
+ * To run the function with the parameters
+ * function_value was the array contains class name & method name concat with a `.` char
+ * such as: [`Base.before`], means to run the Base class's before method
+ */
+void run_method(zval function_value[], zval *retval)
+{
+    zval val, z_obj;
+    array_init(&val);
+    zend_class_entry *c_ce;
+    zval *fun_name, func_parameters/*In Used*/;
+
+    /* Each calling chain start with run_method */
+    ZVAL_NULL( &XAN_G(call_chain) );
+
+    /*all parameters need to passed to the user function */
+    array_init(&func_parameters);
+
+    if ( !function_value || ZVAL_IS_NULL(function_value) ) return ;
+
+    if (zend_hash_num_elements( Z_ARRVAL_P(function_value) )  == 1 )
+    {
+        fun_name = zend_hash_index_find(Z_ARRVAL_P(function_value), 1);
+    }
+    else
+    {
+        fun_name = zend_hash_str_find( Z_ARRVAL_P(function_value), XAN_STRL(VALUE) );
+        zval *paras = zend_hash_str_find( Z_ARRVAL_P(function_value), XAN_STRL(PARAMETERS) );
+        if ( Z_STRLEN_P(paras) )
+        {
+            php_explode(strpprintf(0, "%s", "||"), Z_STR_P(paras), &func_parameters, ZEND_LONG_MAX);
+        }
+    }
+
+    php_explode(strpprintf(0, "%s", "."), Z_STR_P(fun_name), &val, ZEND_LONG_MAX);
+    if ( zend_hash_num_elements( Z_ARRVAL(val) ) <= 1)
+        return ;
+    
+    /* class name */
+    zval *c_name = zend_hash_index_find(Z_ARRVAL(val), 0);
+    /* method name */
+    zval *method_name = zend_hash_index_find(Z_ARRVAL(val), 1);
+    /* func_parameters */
+    
+    if (Z_STRVAL_P(c_name)[0] == '\\')
+    {
+        ZVAL_STRING(c_name, Z_STRVAL_P(c_name) + 1);
+    }
+    c_ce = zend_lookup_class( zend_string_tolower(Z_STR_P(c_name)) );
+
+    /* if you want like the recursive calling, use the following method code. */
+#if 0
+    get_object_from_di(&XAN_G(class_di), Z_STR_P(c_name), &z_obj, c_ce);
+
+    call_method_with_object_params(&z_obj, Z_STRVAL_P(method_name), &func_parameters, retval);
+#else
+    call_annotation_function(NULL, Z_STR_P(c_name), Z_STR_P(method_name), &func_parameters, retval);
+#endif
+    
+}
+
+/**
+ * {{{ proto 
+ * To annalyse the annotaion and call the methods
+ */
+void call_annotation_function(zval *proxy_obj, zend_string *caller_class_ce, zend_string *function_name, zval *parameters, zval *retval)
+{
+    /* Proxy class */
+    zend_class_entry *ce;
+    zval class_name, caller_obj, ret_val, *cc_name;
+
+    /* The class container:[ &XAN_G(class_di) ] */
+    if (ZVAL_IS_NULL(&XAN_G(class_di)))
+    {
+        array_init(&XAN_G(class_di));
+    }
+
+    /* Proxy class */
+    if ( proxy_obj && !caller_class_ce )
+    {
+        cc_name = zend_read_property(XAN_ENTRY_OBJ(proxy_obj), XAN_STRL(CLASS_CE), 1, NULL);
+        if ( !cc_name )
+        {
+            XAN_INFO(E_ERROR, "Please use the `instance` to get an object proxy.");
+        }
+        ZVAL_COPY(&class_name, cc_name);
+    }
+    else
+    {
+        ZVAL_STR(&class_name, caller_class_ce);
+    }
+
+    /* Find whether the function be called was in chain. if exists. error info will be showed */
+    zend_string *chain_method = strpprintf(0, "%s%s", Z_STRVAL(class_name), ZSTR_VAL(function_name));
+    zval *in_result = zend_hash_find( Z_ARRVAL(XAN_G(call_chain)), chain_method );
+    if ( in_result )
+    {
+        XAN_INFO(E_ERROR, "Recursive calling : `%s::%s`\n", Z_STRVAL(class_name), ZSTR_VAL(function_name));
+    }
+    else
+    {
+        add_assoc_string( &XAN_G(call_chain), ZSTR_VAL(chain_method), ZSTR_VAL(chain_method) );
+    }
+
+    /* Proxy class_entry */
+    ce = zend_lookup_class(zend_string_tolower(Z_STR(class_name)));
+    if ( !ce )
+    {
+        XAN_INFO(E_ERROR, "Class `%s` not found.", Z_STRVAL(class_name));
+    }
+
+    get_object_from_di(&XAN_G(class_di), Z_STR(class_name), &caller_obj, ce);
+
+    /* To found wheather the class is @Aspect */
+    zval annotations;
+    array_init(&annotations);
+    get_doc_comment_result(&annotations, get_class_doc_comment(ce) );
+
+    zval *class_annotations = zend_hash_str_find(Z_ARRVAL(annotations), XAN_STRL("annotations"));
+    if ( !class_annotations || ZVAL_IS_NULL(class_annotations) )
+    {
+        goto exit_no_annotation;
+    }
+    zval *aspect = zend_hash_str_find(Z_ARRVAL_P(class_annotations), XAN_STRL("Aspect"));
+    if ( aspect )
+    {
+        /* Found the aspect annotation */
+        zend_string *func_name;
+        zval func_annotations, *function_value;
+        zend_function *calling_function = zend_hash_find_ptr(&ce->function_table, zend_string_tolower(function_name));
+        array_init(&func_annotations);
+        get_doc_comment_result(&func_annotations, get_function_doc_comment(&calling_function->op_array));
+
+        zval *all_annotations = zend_hash_str_find( Z_ARRVAL(func_annotations), XAN_STRL("annotations") );
+        
+        if ( all_annotations && zend_hash_num_elements(Z_ARRVAL_P(all_annotations)))
+        {
+            zval *before_func_name = zend_hash_str_find(Z_ARRVAL_P(all_annotations), XAN_STRL("before"));
+            zval *after_func_name = zend_hash_str_find(Z_ARRVAL_P(all_annotations), XAN_STRL("after"));
+            zval *success_func_name = zend_hash_str_find(Z_ARRVAL_P(all_annotations), XAN_STRL("success"));
+            zval *failure_func_name = zend_hash_str_find(Z_ARRVAL_P(all_annotations), XAN_STRL("failure"));
+            
+            /*before*/
+            run_method(before_func_name, retval);
+            
+            /*main function*/
+            ZVAL_TRUE(&ret_val);
+            call_method_with_object_params( &caller_obj, ZSTR_VAL(zend_string_tolower(function_name)), parameters, &ret_val );
+
+            /* success or failure function */
+            if (Z_TYPE_INFO(ret_val) == IS_TRUE)
+            {
+                /* success */
+                run_method(success_func_name, retval);
+            }
+            else
+            {   /* failure */
+                run_method(failure_func_name, retval);
+            }
+
+            /* after */
+            run_method(after_func_name, retval);
+
+            return ;
+        }
+    }
+
+exit_no_annotation:
+    call_method_with_object_params( &caller_obj, ZSTR_VAL(zend_string_tolower(function_name)), parameters, retval );
+}
 
 /*
  * Local variables:

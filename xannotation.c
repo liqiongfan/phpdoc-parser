@@ -45,6 +45,7 @@ XAN_INIT(annotation);
 XAN_INIT(config_class);
 XAN_INIT(attr_annotation);
 XAN_INIT(const_annotation);
+XAN_INIT(aspect_annotation);
 
 /*}}}*/
 
@@ -105,6 +106,7 @@ PHP_MINIT_FUNCTION(xannotation)
 	config_class_init();
 	attr_annotation_init();
 	const_annotation_init();
+	aspect_annotation_init();
 
 	return SUCCESS;
 }
@@ -131,6 +133,7 @@ PHP_RINIT_FUNCTION(xannotation)
 #endif
 
 	ZVAL_NULL(&XAN_G(class_di));
+	ZVAL_NULL(&XAN_G(call_chain));
 	return SUCCESS;
 }
 /* }}} */

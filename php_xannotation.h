@@ -46,6 +46,7 @@ extern zend_module_entry xannotation_module_entry;
 ZEND_BEGIN_MODULE_GLOBALS(xannotation)
     zval aliases;
     zval class_di;
+    zval call_chain;
 ZEND_END_MODULE_GLOBALS(xannotation)
 
 /* Always refer to the globals in your function as XANNOTATION_G(variable).
