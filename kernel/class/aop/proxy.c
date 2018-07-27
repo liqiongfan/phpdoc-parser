@@ -431,12 +431,15 @@ void call_annotation_function(zval *proxy_obj, zend_string *caller_class_ce, zen
             /* after */
             run_method(after_func_name, retval);
 
+            zend_array_destroy(Z_ARRVAL(annotations));
+
             return ;
         }
     }
 
 exit_no_annotation:
     call_method_with_object_zval( &caller_obj, ZSTR_VAL(ZS_LOWER(function_name)), parameters TSRMLS_CC, retval TSRMLS_CC );
+    zend_array_destroy(Z_ARRVAL(annotations));
 }
 
 /*
