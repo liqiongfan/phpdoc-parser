@@ -1,8 +1,24 @@
-# Xan 高性能的PHP注解扩展
+# Xan 高性能的PHP扩展框架
 
 An extension for PHP document parsing. written in C code.
 
 Author：Josin <774542602@qq.com> | <a href="https://www.supjos.cn/archives/46.html#directory0065624643873947846">博客</a>
+
+**Xan是一款高性能的易于使用上手的PHP开发框架，颠覆了传统的配置模式，更新为注解机制，利用注解进行配置，便于优化代码、清晰逻辑；并且基于C语言开发，性能极高。**
+
+#### 框架特点：
+
+​    **1、PSR自动加载**
+
+​    **2、注解特性**
+
+​    **3、AOP编程**
+
+​    **4、IOC反转**
+
+​    **5、高效视图引擎**
+
+​    **6、高效API接口XML与JSON**
 
 ## 何为注解?  ##
 
@@ -40,7 +56,13 @@ class A
 }
 ```
 
+#### 特性说明
 
+**1、** 在 **Xan** 中，控制器中存在 **init()** 方法的情况下，引擎会自动从顶级父类开始执行 **init()** 到本类，不需要用户手动使用 **parent::init()** 进行调用。
+
+**2、** 全局变量：**Xan\Apps::$app** 表示的是全局的 **Xan\Apps** 类的对象；IOC与容器基于此变量。
+
+**3、** **XML** 数据，如果键名为数字也就是索引数组的情况下，系统会自动创建 **key** 作为元素标签名。系统会自动创建一个 **root** 键名作为根元素的键名。
 
 ##  注解初始化类属性
 
@@ -88,8 +110,8 @@ class Base
 
 ```php
 -dir
-  +++index.php
-  +++Base.php
+  +index.php
+  +Base.php
 ```
 
 ## AOP切面思想 ##
