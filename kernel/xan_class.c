@@ -90,11 +90,16 @@ XAN_METHOD(Xan, getClassDocComment)
 
     if (Z_TYPE_P(class_name) == IS_OBJECT)
     {
+        if ( !get_class_doc_comment(Z_OBJCE_P(class_name)) )
+            RETURN_NULL();
+
         RETURN_STR(get_class_doc_comment(Z_OBJCE_P(class_name)));
     }
     else if (Z_TYPE_P(class_name) == IS_STRING)
     {
         zend_class_entry *ce = zend_lookup_class(Z_STR_P(class_name));
+        if ( !get_class_doc_comment(ce) )
+            RETURN_NULL();
         RETURN_STR(get_class_doc_comment(ce));
     }
     else
@@ -145,6 +150,9 @@ XAN_METHOD(Xan, getMethodDocComment)
         XAN_INFO(E_ERROR, "Method: %s not exists in Class %s!", ZSTR_VAL(method_name), ZSTR_VAL(class_entry->name));
     }
 
+    if ( !get_function_doc_comment(&method_value->op_array) )
+        RETURN_NULL();
+
     RETURN_STR(get_function_doc_comment(&method_value->op_array));
 }/*}}}*/
 
@@ -167,10 +175,9 @@ XAN_METHOD(Xan, parseDocComment)
     }
     
     zend_object *retval = zend_objects_clone_obj(getThis());
-    ZVAL_OBJ(&zretval, retval);
+    ZVAL_OBJ(return_value, retval);
 
-    parse_doc_comment(&zretval, doc_comment);
-    ZVAL_COPY_VALUE(return_value, &zretval);
+    parse_doc_comment(return_value, doc_comment);
 }/*}}}*/
 
 /**
@@ -357,13 +364,14 @@ zend_string *get_function_doc_comment(zend_op_array *op_array)
  * {{{ proto parse_line_comment(zval *retval, char *str)
  * Parsing the str such as : '@type(value="", age="")
  */
-static void parse_line_comment(zval *retval, char *str)
+static void parse_line_comment(zval *retval, char *str, int *b_e, int l_s )
 {
     zend_long ukey;
-    zval temp_array, *value;
+    zval temp_array, *value, tval;
+    if ( str[0] == '@') if ( !(*b_e) ) *b_e = l_s;
     char anno_name[1024] = {0}, anno_attr[1024] = {0}, anno_key[1024] = {0}, anno_value[1024] = {0};
-    size_t index = 0, para_left = 0, para_right = 0, c_index = 0, default_value = 1, in_quote = 0;
-    for( str = str + 1; index < strlen(str); index++)
+    int  index = 0, para_left = 0, para_right = 0, c_index = 0, default_value = 1, in_quote = 0;
+    for( str = str + 1; index <= strlen(str); index++)
     {
         if ( str[index] == '(' && para_left == 0 )
         {
@@ -385,9 +393,15 @@ static void parse_line_comment(zval *retval, char *str)
 
         if ( !in_quote )
         {
-            if (str[index] == ')' && (index == strlen(str) - 1))
+            if ( (str[index] == ')' && (index == strlen(str) - 1)) )
             {
                 para_right = index;
+                break;
+            }
+            else if ( str[index] == ')' && (index != strlen(str) - 1))
+            {
+                in_quote = 1;
+                bzero(anno_name, sizeof(anno_name));
                 break;
             }
         }
@@ -395,22 +409,26 @@ static void parse_line_comment(zval *retval, char *str)
 
     if ( in_quote )
     {
-        if (*anno_name != '\0')
-            add_assoc_null(retval, anno_name);
+        if (*anno_name != '\0') add_assoc_null(retval, anno_name);
         return ;
     }
 
-    if ( (para_left == 0) && (para_right == 0))
+    if ( index && !para_left && !para_right)
     {
-        para_right = strlen(str);
-        memcpy(anno_attr, str + para_left, para_right - para_left);
-        add_assoc_null(retval, anno_attr);
+        memcpy(anno_name, str, index);
+        add_assoc_null(retval, anno_name);
+        return ;
+    }
+
+    if ( (para_left) && !para_right)
+    {
         return ;
     }
 
     memcpy(anno_attr, str + para_left + 1, para_right - para_left - 1);
     
     array_init(&temp_array);
+    array_init(&tval);
     php_explode( strpprintf(0, "%s", ","), strpprintf(0, "%s", anno_attr), &temp_array, ZEND_LONG_MAX );
 
     ZEND_HASH_FOREACH_NUM_KEY_VAL(Z_ARRVAL(temp_array), ukey, value)
@@ -427,7 +445,7 @@ static void parse_line_comment(zval *retval, char *str)
                 memcpy(anno_value, ZSTR_VAL(trim_value) + c_index + 1, ZSTR_LEN(trim_value) - c_index - 1);
 
                 add_assoc_str(
-                    &temp_array, 
+                    &tval, 
                     ZSTR_VAL( php_trim(strpprintf(0, "%s", anno_key), XAN_STRL(" \""), 3) ), 
                     php_trim(strpprintf(0, "%s", anno_value), XAN_STRL(" \"'"), 3)
                 );
@@ -435,16 +453,16 @@ static void parse_line_comment(zval *retval, char *str)
         }
         if (default_value)
         {
-            add_next_index_str(&temp_array, php_trim(trim_value, XAN_STRL(" \"'"), 3));
+            add_index_str(&tval, ukey,  php_trim(trim_value, XAN_STRL(" \"'"), 3));
         }
-        
-        zend_hash_index_del(Z_ARRVAL(temp_array), ukey);
         
     } ZEND_HASH_FOREACH_END();
 
-    Z_TRY_ADDREF(temp_array);
+    zend_array_destroy(Z_ARRVAL(temp_array));
 
-    add_assoc_zval(retval, anno_name, &temp_array);
+    Z_TRY_ADDREF(tval);
+
+    add_assoc_zval(retval, anno_name, &tval);
 }/*}}}*/
 
 /**
@@ -454,64 +472,76 @@ static void parse_line_comment(zval *retval, char *str)
  */
 void parse_doc_comment(zval *object, zend_string *doc_comment)
 {
-    if ( !doc_comment || !ZSTR_LEN(doc_comment) )
-    {
-        return ;
-    }
-
     zval anno, ret, func_name, pattern, replace, subject;
-    char buff[1024] = {0}, body[2048] = {0};
-    char *comments = ZSTR_VAL(doc_comment);
-    size_t index = 0, sig_start = 0, 
-           comment_body_start = 0,
-           comment_body_end = 0, new_line = 0;
+
+    if ( !doc_comment || !ZSTR_LEN(doc_comment) ) return ;
+
     array_init(&anno);
+    char *str = ZSTR_VAL(doc_comment);
 
-    for( ; index < ZSTR_LEN(doc_comment); index++)
-    {
-        if (comments[index] == '\n')
-        {
-            if ( sig_start )
-            {
-                bzero(buff, sizeof(buff));
-                strncpy(buff, comments + sig_start, index - sig_start);
-                parse_line_comment(&anno, buff);
-            }
-            
-            new_line = 1;
-            
-            if (comment_body_start == 0)
-                comment_body_start = index;
-            
-            continue;
+    char body[2048] = { 0 }, l_c[2048] = { 0 };
+
+	int i = 0/* str pos*/, n_l = 0/*new line*/, b_s = 0/*body start*/, b_e = 0/*body end*/,
+		l_s = 0/* line start */, l_e = 0 /* line end */, t = 0, t_k = 0;
+
+	for (i = 0; i < ZSTR_LEN(doc_comment); ++i)
+	{
+		if ( !b_s && ( str[i] == '/' || str[i] == '*' || str[i] == ' ' ) ) continue;
+
+		if ( str[i] == '\n' ) {
+			for (t = i + 1; t < strlen(str); t++, i++)
+			{
+				if ( str[t] == '*' || str[t] == ' ') continue;
+				else {
+					if ( !l_s ){
+						l_s = i;
+						if ( !b_s ) b_s = i;
+					}
+				}
+				if ( str[t] == '\n' ) {
+					if ( !l_e ) {
+						l_e = i;
+						break;
+					}
+				}
+			}
+		}
+
+		if ( !l_e ) continue;
+		if (l_s == l_e) {
+			l_s = 0;
+			l_e = 0;
+			continue;
+		}
+
+        for (t_k = l_e; t_k > 0; t_k--) {
+            if (str[t_k] == ' ') continue;
+            else break;
         }
+        l_e = t_k;
+		bzero(l_c, sizeof(l_c));
+		memcpy(l_c, str + l_s + 1, l_e - l_s);
+        parse_line_comment( &anno, l_c, &b_e, l_s + 1 );
+		l_s = 0;
+		l_e = 0;
+	}
 
-        if ( new_line )
-        {
-            if ( comments[index] == ' ' || comments[index] == '*' ) continue;
+    /**
+     * If the doc emtpy.
+     */
+    if ( !b_e ) b_e = ZSTR_LEN(doc_comment);
 
-            if ( comments[index] == '@' )
-            {
-                /* Annotations */
-                if ( sig_start == 0 )
-                    comment_body_end = index;
-                /* Annotation start */
-                sig_start = index;
-            }
-            else
-                new_line = 0;
-        }
-    }
     write_zval_property_to_object(object, "annotations", &anno);
     write_property_to_object(object, "num", ZSTR_VAL(strpprintf(0, "%d", zend_hash_num_elements(Z_ARRVAL(anno))) ) );
 
     /* To parse the commend_body */
-    memcpy(body, comments + comment_body_start, comment_body_end - comment_body_start);
+    // memcpy(body, str + c_s, !ZSTR_LEN(doc_comment) ? 0 : c_e - c_s - 1);
+    memcpy(body, str + b_s, b_e - b_s - 1);
 
     ZVAL_STRING(&func_name, "preg_replace");
     ZVAL_STRING(&subject, body);
     ZVAL_STRING(&replace, "\n");
-    ZVAL_STRING(&pattern, "#\\n\\**( \\**|)#");
+    ZVAL_STRING(&pattern, "#\\n[ ]*\\**#");
     zval params[3] = {pattern, replace, subject};
     call_user_function(EG(function_table), NULL, &func_name, &ret, 3, params);
     zval_ptr_dtor(&func_name);
@@ -530,6 +560,8 @@ void parse_doc_comment(zval *object, zend_string *doc_comment)
  */
 void get_doc_comment_result(zval *retval, zend_string *doc_comment)
 {
+    zval anno, ret, func_name, pattern, replace, subject;
+
     if (Z_TYPE_P(retval) != IS_ARRAY)
     {
         return ;
@@ -540,65 +572,71 @@ void get_doc_comment_result(zval *retval, zend_string *doc_comment)
         return ;
     }
 
-    zval anno, ret, func_name, pattern, replace, subject;
-    char buff[1024] = {0}, body[2048] = {0};
-    char *comments = ZSTR_VAL(doc_comment);
-    size_t index = 0, sig_start = 0, 
-           comment_body_start = 0,
-           comment_body_end = 0, new_line = 0;
     array_init(&anno);
+    char *str = ZSTR_VAL(doc_comment);
 
-    for( ; index < ZSTR_LEN(doc_comment); index++)
-    {
-        if (comments[index] == '\n')
-        {
-            if ( sig_start )
-            {
-                bzero(buff, sizeof(buff));
-                strncpy(buff, comments + sig_start, index - sig_start);
-                parse_line_comment(&anno, buff);
-            }
-            
-            new_line = 1;
-            
-            if (comment_body_start == 0)
-                comment_body_start = index;
-            
-            continue;
+    char body[2048] = { 0 }, l_c[2048] = { 0 };
+
+	int i = 0/* str pos*/, n_l = 0/*new line*/, b_s = 0/*body start*/, b_e = 0/*body end*/,
+		l_s = 0/* line start */, l_e = 0 /* line end */, t = 0, t_k = 0;
+
+	for (i = 0; i < ZSTR_LEN(doc_comment); ++i)
+	{
+		if ( !b_s && ( str[i] == '/' || str[i] == '*' || str[i] == ' ' ) ) continue;
+
+		if ( str[i] == '\n' ) {
+			for (t = i + 1; t < strlen(str); t++, i++)
+			{
+				if ( str[t] == '*' || str[t] == ' ') continue;
+				else {
+					if ( !l_s ){
+						l_s = i;
+						if ( !b_s ) b_s = i;
+					}
+				}
+				if ( str[t] == '\n' ) {
+					if ( !l_e ) {
+						l_e = i;
+						break;
+					}
+				}
+			}
+		}
+
+		if ( !l_e ) continue;
+
+		if (l_s == l_e) {
+			l_s = 0;
+			l_e = 0;
+			continue;
+		}
+
+        for (t_k = l_e; t_k > 0; t_k--) {
+            if (str[t_k] == ' ') continue;
+            else break;
         }
+        l_e = t_k;
+		bzero(l_c, sizeof(l_c));
+		memcpy(l_c, str + l_s + 1, l_e - l_s);
+        parse_line_comment( &anno, l_c, &b_e, l_s + 1 );
+		l_s = 0;
+		l_e = 0;
+	}
 
-        if ( new_line )
-        {
-            if ( comments[index] == ' ' || comments[index] == '*' ) continue;
-
-            if ( comments[index] == '@' )
-            {
-                /* Annotations */
-                if ( sig_start == 0 )
-                    comment_body_end = index;
-                /* Annotation start */
-                sig_start = index;
-            }
-            else
-                new_line = 0;
-        }
-    }
-
-    if (sig_start == 0)
-    {
-        comment_body_end = strlen(comments) - 1;
-    }
+    /**
+     * If the doc emtpy.
+     */
+    if ( !b_e ) b_e = ZSTR_LEN(doc_comment);
 
     add_assoc_zval(retval, "annotations", &anno);
     add_assoc_long(retval, "num", zend_hash_num_elements(Z_ARRVAL(anno)));
-
     /* To parse the commend_body */
-    memcpy(body, comments + comment_body_start, comment_body_end - comment_body_start);
+    memcpy(body, str + b_s, b_e - b_s - 1);
 
     ZVAL_STRING(&func_name, "preg_replace");
     ZVAL_STRING(&subject, body);
     ZVAL_STRING(&replace, "\n");
-    ZVAL_STRING(&pattern, "#\\n\\**( \\**|)#");
+    ZVAL_STRING(&pattern, "#\\n[ ]*\\**#");
     zval params[3] = {pattern, replace, subject};
     call_user_function(EG(function_table), NULL, &func_name, &ret, 3, params);
     zval_ptr_dtor(&func_name);

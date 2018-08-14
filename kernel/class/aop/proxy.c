@@ -27,9 +27,12 @@
 #include "ext/standard/info.h"
 #include "php_xannotation.h"
 #include "kernel/xan_class.h"
+#include "ext/json/php_json.h"
 #include "kernel/loader/loader.h"
+#include "Zend/zend_smart_str.h"
 #include "kernel/class/aop/proxy.h"
 #include "ext/standard/php_string.h"
+#include "main/SAPI.h"
 
 void t_info(int type, char *info, ...)
 {
@@ -248,7 +251,7 @@ void call_method_with_object_array(zval *object, char *method_name, uint32_t par
  */
 void call_method_with_object_zval( zval *object, char *method_name, zval *parameters TSRMLS_CC, zval *ret_val )
 {
-    uint32_t p_counts = zend_hash_num_elements(Z_ARRVAL_P(parameters));
+    uint32_t p_counts = !parameters ? 0 : zend_hash_num_elements(Z_ARRVAL_P(parameters));
     if ( p_counts ) 
     {
         uint32_t n = 0;
@@ -300,6 +303,10 @@ void run_method(zval function_value[], zval *retval)
     else
     {
         fun_name = zend_hash_str_find( Z_ARRVAL_P(function_value), XAN_STRL(VALUE) );
+        if ( !fun_name )
+        {
+            fun_name = zend_hash_index_find( Z_ARRVAL_P(function_value), 0);
+        }
         zval *paras = zend_hash_str_find( Z_ARRVAL_P(function_value), XAN_STRL(PARAMETERS) );
         if ( Z_STRLEN_P(paras) )
         {
@@ -321,11 +328,50 @@ void run_method(zval function_value[], zval *retval)
     {
         ZVAL_STRING(c_name, Z_STRVAL_P(c_name) + 1);
     }
-
+    
     call_annotation_function(NULL, Z_STR_P(c_name), Z_STR_P(method_name), &func_parameters, retval);
 
     zend_array_destroy(Z_ARRVAL(val));
-}
+}/*}}}*/
+
+/**
+ * {{{
+ * To combine the zval data to xml data
+ */
+void combine_xml_data(zval *data, smart_str *result)
+{
+    if (Z_TYPE_P(data) != IS_ARRAY) return ;
+
+    Bucket *bucket;
+
+    ZEND_HASH_FOREACH_BUCKET(Z_ARRVAL_P(data), bucket)
+    {
+        if ( !bucket->key ) bucket->key = strpprintf(0, "%s", "key");
+        smart_str_appendc(result, '<');
+        smart_str_appends(result, ZSTR_VAL(bucket->key));
+        smart_str_appendc(result, '>');
+        /* <![CDATA[ ]]> */
+        if ( Z_TYPE(bucket->val) == IS_ARRAY )
+        {
+            combine_xml_data(&(bucket->val), result);
+        }
+        else if ( Z_TYPE(bucket->val) == IS_LONG )
+        {
+            smart_str_append_long(result, Z_LVAL(bucket->val));
+        }
+        else
+        {
+            if (Z_TYPE(bucket->val) != IS_STRING)
+                convert_to_string(&bucket->val);
+            smart_str_appends(result, "<![CDATA[");
+            smart_str_appends(result, Z_STRVAL(bucket->val));
+            smart_str_appends(result, "]]>");
+        }
+        smart_str_appends(result, "</");
+        smart_str_appends(result, ZSTR_VAL(bucket->key));
+        smart_str_appendc(result, '>');
+    } ZEND_HASH_FOREACH_END();
+}/*}}}*/
 
 /**
  * {{{ proto 
@@ -336,12 +382,6 @@ void call_annotation_function(zval *proxy_obj, zend_string *caller_class_ce, zen
     /* Proxy class */
     zend_class_entry *ce;
     zval class_name, caller_obj, ret_val, *cc_name;
-
-    /* The class container:[ &XAN_G(class_di) ] */
-    if (ZVAL_IS_NULL(&XAN_G(class_di)))
-    {
-        array_init(&XAN_G(class_di));
-    }
 
     /* Proxy class */
     if ( proxy_obj && !caller_class_ce )
@@ -397,8 +437,8 @@ void call_annotation_function(zval *proxy_obj, zend_string *caller_class_ce, zen
         zval func_annotations, *function_value;
         zend_function *calling_function = Z_H_F_P(&ce->function_table, ZS_LOWER(function_name));
         array_init(&func_annotations);
-        get_doc_comment_result(&func_annotations, get_function_doc_comment(&calling_function->op_array));
 
+        get_doc_comment_result(&func_annotations, get_function_doc_comment(&calling_function->op_array));
         zval *all_annotations = STRING_FIND( func_annotations, "annotations" );
         
         if ( all_annotations && Z_H_N_E(Z_ARRVAL_P(all_annotations)))
@@ -407,6 +447,7 @@ void call_annotation_function(zval *proxy_obj, zend_string *caller_class_ce, zen
             zval *after_func_name   = STRING_FIND_P(all_annotations, "after");
             zval *success_func_name = STRING_FIND_P(all_annotations, "success");
             zval *failure_func_name = STRING_FIND_P(all_annotations, "failure");
+            zval *api_format        = STRING_FIND_P(all_annotations, "api");
             
             /*before*/
             run_method(before_func_name, retval);
@@ -414,6 +455,78 @@ void call_annotation_function(zval *proxy_obj, zend_string *caller_class_ce, zen
             /*main function*/
             ZVAL_TRUE(&ret_val);
             call_method_with_object_zval( &caller_obj, ZSTR_VAL(ZS_LOWER(function_name)), parameters TSRMLS_CC, &ret_val );
+
+            /* If set the api_format tag */
+            if ( api_format && !ZVAL_IS_NULL(api_format) )
+            {
+                sapi_header_line ctr = {0};
+
+                if (Z_TYPE_P(api_format) == IS_ARRAY)
+                {
+                    zval *format = STRING_FIND_P(api_format, "type");
+                    zval *charset = STRING_FIND_P(api_format, "charset");
+                    if ( charset )
+                    {
+                        if ( !Z_STRLEN_P(charset) )
+                            charset = NULL;
+                    }
+                    if ( format && zend_string_equals_literal(Z_STR_P(format), "JSON"))
+                    {
+                        ctr.line_len = spprintf(
+                            &(ctr.line), 
+                            0, 
+                            "%s:%s", 
+                            "Content-Type", 
+                            !charset ? "application/json;charset=UTF-8" : ZSTR_VAL(strpprintf(0, "%s%s", "applicatin/json;charset=", Z_STRVAL_P(charset)))
+                        );
+                        ctr.response_code = 200;                                           
+                        sapi_header_op(SAPI_HEADER_REPLACE, &ctr);
+                        efree(ctr.line);
+
+                        XAN_G(auto_render) = 0;
+                        if (Z_TYPE(ret_val) == IS_ARRAY)
+                        {
+                            smart_str json_str = { 0 };
+                            php_json_encode(&json_str, &ret_val, 256);
+                            smart_str_0(&json_str);
+                            php_write( ZSTR_VAL(json_str.s), ZSTR_LEN(json_str.s) );
+                            smart_str_free(&json_str);
+                            ZVAL_TRUE(&ret_val);
+                        }
+                    }
+                    else if ( format && zend_string_equals_literal(Z_STR_P(format), "XML"))
+                    {
+                        XAN_G(auto_render) = 0;
+                        if (Z_TYPE(ret_val) == IS_ARRAY)
+                        {
+                            ctr.line_len = spprintf(
+                                &(ctr.line), 
+                                0, 
+                                "%s:%s", 
+                                "Content-Type", 
+                                !charset ? "application/xml;charset=UTF-8" : ZSTR_VAL(strpprintf(0, "%s%s", "applicatin/xml;charset=", Z_STRVAL_P(charset)))
+                            );
+                            ctr.response_code = 200;                                           
+                            sapi_header_op(SAPI_HEADER_REPLACE, &ctr);
+                            efree(ctr.line);
+                            smart_str xml_str = { 0 };
+                            smart_str_appends(&xml_str, "<?xml version=\"1.0\" encoding=\"");
+                            smart_str_appends(&xml_str, 
+                                !charset ? "UTF-8" : Z_STRVAL_P(charset)
+                            );
+                            smart_str_appends(&xml_str, "\"?>");
+                            smart_str_appends(&xml_str, "<root>");
+                            combine_xml_data(&ret_val, &xml_str);
+                            smart_str_appends(&xml_str, "</root>");
+                            smart_str_0(&xml_str);
+                            php_write( ZSTR_VAL(xml_str.s), ZSTR_LEN(xml_str.s) );
+                            smart_str_free(&xml_str);
+                            ZVAL_TRUE(&ret_val);
+                        }
+                    }
+                }
+                
+            }
 
             /* success or failure function */
             if (Z_TYPE_INFO(ret_val) == IS_TRUE)
@@ -431,6 +544,7 @@ void call_annotation_function(zval *proxy_obj, zend_string *caller_class_ce, zen
             /* after */
             run_method(after_func_name, retval);
 
+            /* destory array */
             zend_array_destroy(Z_ARRVAL(annotations));
 
             return ;
@@ -439,6 +553,7 @@ void call_annotation_function(zval *proxy_obj, zend_string *caller_class_ce, zen
 
 exit_no_annotation:
     call_method_with_object_zval( &caller_obj, ZSTR_VAL(ZS_LOWER(function_name)), parameters TSRMLS_CC, retval TSRMLS_CC );
+    /* destroy array */
     zend_array_destroy(Z_ARRVAL(annotations));
 }
 

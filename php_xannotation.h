@@ -44,9 +44,22 @@ extern zend_module_entry xannotation_module_entry;
 */
 
 ZEND_BEGIN_MODULE_GLOBALS(xannotation)
-    zval aliases;
-    zval class_di;
-    zval call_chain;
+    zval app_di;              /* global app object */
+    zval aliases;             /* all aliases which used to auto_load */
+    zval class_di;            /* global di for object reuse */
+    zval call_chain;          /* the call chain for annotation */
+    char url_pattern;         /* 0: auto, 1: get, 2: path_info */
+    zval url_get_str;         /* [zend_string]the url get str for the get mode */
+    zval default_module;      /* [zend_string]the default module */
+    zval default_controller;  /* [zend_string]the default controller */
+    zval default_action;      /* [zend_string]the default action */
+    zval view_suffix;         /* [zend_string]the view suffix */
+    zval url_suffix;          /* [zend_string]the url suffix */
+    zend_bool must_url_suffix;/* [bool]the url must contain the url suffix [0 or 1] */
+    zval allow_modules;       /* [array]all modules which can be used to route */
+    zend_bool auto_render;    /* 0 disable auto_render 1 auto_render */
+    zval application_dir;     /* [zend_string]the application directory */
+    zval default_namespace;   /* [zend_string]the default namespace */
 ZEND_END_MODULE_GLOBALS(xannotation)
 
 /* Always refer to the globals in your function as XANNOTATION_G(variable).
@@ -63,7 +76,7 @@ ZEND_TSRMLS_CACHE_EXTERN()
  * {{{
  * User should to modify this value to 0 when in production mode
  */
-#define DEBUG_MODE 0
+#define DEBUG_MODE 1
 /*}}}*/
 
 /**

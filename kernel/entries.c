@@ -29,6 +29,9 @@
 
 zend_class_entry *xan_ce;
 zend_class_entry *proxy_ce;
+zend_class_entry *request_ce;
+zend_class_entry *xan_app_ce;
+zend_class_entry *xan_view_ce;
 zend_class_entry *loader_ce;
 zend_class_entry *aspect_ce;
 zend_class_entry *annotation_ce;

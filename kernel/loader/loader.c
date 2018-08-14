@@ -30,6 +30,7 @@
 #include "Zend/zend_exceptions.h"
 #include "kernel/xan_class.h"
 #include "Zend/zend_interfaces.h"
+#include "kernel/class/aop/proxy.h"
 #include "kernel/class/annotation/annotation.h"
 #include "kernel/class/annotation/class_attr.h"
 #include "kernel/class/annotation/class_const.h"
@@ -63,6 +64,27 @@ ZEND_END_ARG_INFO()
 XAN_METHOD(Loader, __construct)
 {
     array_init(&XAN_G(aliases));
+
+    /* Enable auto_load */
+    zval zcallback, zprepend, zfunc_name, retval, zshow;
+    zend_bool prepend = 0;
+
+    array_init(&zcallback);
+    ZVAL_LONG(&zprepend, prepend);
+    ZVAL_LONG(&zshow, 1);
+    ZVAL_STRING(&zfunc_name, "spl_autoload_register");
+
+    add_next_index_zval(&zcallback, getThis());
+    add_next_index_string(&zcallback, "loader");
+
+    zval params[3] = { zcallback, zshow, zprepend };
+    call_user_function(EG(function_table), NULL, &zfunc_name, &retval, 3, params);
+    
+    zval_ptr_dtor(&zshow);
+    zval_ptr_dtor(&retval);
+    zval_ptr_dtor(&zprepend);
+    zval_ptr_dtor(&zcallback);
+    zval_ptr_dtor(&zfunc_name);
 }/*}}}*/
 
 /**
@@ -129,7 +151,6 @@ XAN_METHOD(Loader, start)
     add_next_index_string(&zcallback, "loader");
 
     zval params[3] = { zcallback, zshow, zprepend };
-
     call_user_function(EG(function_table), NULL, &zfunc_name, &retval, 3, params);
     
     zval_ptr_dtor(&zshow);
@@ -215,7 +236,7 @@ void is_file(char *path)
     if (access(path, F_OK) == -1) {
         if (DEBUG_MODE)
         {
-            XAN_INFO(E_ERROR, "File: %s not exists!", path);
+            XAN_INFO(E_ERROR, "Path: `%s` not exists!", path);
         }
         else
         {
@@ -224,7 +245,7 @@ void is_file(char *path)
             {
                 filename = path;
             }
-            XAN_INFO(E_ERROR, "File: %s not exists!", filename + 1);
+            XAN_INFO(E_ERROR, "Path: `%s` not exists!", filename + 1);
         }
     }
 }/*}}}*/
@@ -265,6 +286,81 @@ void require_php_file(char *file_name)
     if (EG(exception)) zend_exception_error(EG(exception), E_ERROR);
     
     zend_destroy_file_handle(&file_handle);
+}/*}}}*/
+
+/**
+ * {{{ proto 
+ * Require the template file into the view file
+ */
+int xan_require_file(const char * file_name, zval *variables, zval *called_object_ptr, zval *return_view)
+{
+    zend_file_handle file_handle;
+
+    file_handle.free_filename = 0;
+    file_handle.type          = ZEND_HANDLE_FILENAME;
+    file_handle.opened_path   = NULL;
+    file_handle.filename      = file_name;
+    file_handle.handle.fp     = NULL;
+    zend_op_array *op_array = NULL;
+    zend_try {
+        op_array = zend_compile_file(&file_handle, ZEND_INCLUDE);
+    }zend_end_try();
+    if (EG(exception)) {
+        zend_exception_error(EG(exception), E_ERROR);
+    }
+    zend_execute_data *require_call = zend_vm_stack_push_call_frame(
+          ZEND_CALL_NESTED_CODE | ZEND_CALL_HAS_SYMBOL_TABLE,
+          (zend_function *)op_array, 
+          0, 
+          ( called_object_ptr != NULL ) ? Z_OBJCE_P(called_object_ptr) : NULL, 
+          ( called_object_ptr != NULL ) ? Z_OBJ_P(called_object_ptr) : NULL
+    );
+    /* To extract the variables into the view file */
+    if ( (variables == NULL) || !zend_hash_num_elements(Z_ARRVAL_P(variables)) ) {
+        zval empty_variables;
+        array_init(&empty_variables);
+        variables = &empty_variables;
+    }
+    if ( Z_TYPE_P(variables) == IS_ARRAY ){
+        zend_array *symbol_tables = emalloc(sizeof(zend_array));
+        zend_hash_init(symbol_tables, 8, NULL, ZVAL_PTR_DTOR, 0);
+        zend_hash_real_init(symbol_tables, 0);
+        zend_string *var_name;
+        zval *var_value;
+        ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(variables), var_name, var_value){
+            if (EXPECTED(zend_hash_add_new(symbol_tables, var_name, var_value))) {
+                Z_TRY_ADDREF_P(var_value);
+            }
+        } ZEND_HASH_FOREACH_END();
+        require_call->symbol_table = symbol_tables;
+    }
+    if (return_view &&  php_output_start_user( NULL, 0, PHP_OUTPUT_HANDLER_STDFLAGS ) == FAILURE) {
+        XAN_INFO( E_WARNING, "Failed to call ob_start().");
+        return 0;
+    }
+    zval result;
+    zend_init_execute_data( require_call, op_array, &result );
+    ZEND_ADD_CALL_FLAG(require_call, ZEND_CALL_TOP);
+    zend_execute_ex(require_call);
+    zend_vm_stack_free_call_frame(require_call);
+    destroy_op_array(op_array);
+    efree_size(op_array, sizeof(zend_op_array));
+    if (EG(exception)) {
+        zend_exception_error(EG(exception), E_ERROR);
+        return 0;
+    }
+    zend_destroy_file_handle(&file_handle);
+    if (return_view) { /* Store the data into the return_view zval struct and discard the data in the output */
+        if (php_output_get_contents(return_view) == FAILURE) {
+            php_output_end();
+            XAN_INFO(E_WARNING, "Can't fetch the ob_data.");
+            return 0;
+        }
+        if (php_output_discard() != SUCCESS ) {
+            return 0;
+        }
+    }
+    return 1;
 }/*}}}*/
 
 /**
@@ -331,7 +427,7 @@ again:
                 XAN_INFO(E_ERROR, "Annotation class : `%s` must be implemented from Annotation interface!", ZSTR_VAL(annotation_class_name) );
                 return ;
             }
-            object_init_ex(&class_obj, o_ce);
+            get_object_from_di(&XAN_G(class_di), annotation_class_name, &class_obj, o_ce);
             zend_call_method_with_2_params( &class_obj, o_ce, NULL, "input", &retval, &class_entry, annotation_class_value );
         }
 
@@ -440,6 +536,26 @@ void only_auto_load_file(zend_string *class_name, zval *aliases)
 
     XAN_INFO(E_ERROR, "Class: [%s] can't be autoloaded.", ZSTR_VAL(class_name));
 }/*}}}*/
+
+/**
+ * {{{
+ * Recursive calling the method without the obj
+ */
+void recursive_call_method_without_obj(zend_class_entry *ce, zend_string *name)
+{
+    zval retval;
+    zend_function *func = zend_hash_find_ptr(&ce->function_table, name);
+    if ( !func )
+        return ;
+    
+    if ( ce->parent )
+        recursive_call_method_without_obj(ce->parent, name);
+    
+    zend_execute( (zend_op_array *)func, &retval);
+
+    zval_ptr_dtor(&retval);
+}/*}}}*/
+
 /*
  * Local variables:
  * tab-width: 4

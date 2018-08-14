@@ -39,7 +39,10 @@ static int le_xannotation;
  * All declaration for the function in the init
  */
 XAN_INIT(xan);
+XAN_INIT(app);
+XAN_INIT(view);
 XAN_INIT(loader);
+XAN_INIT(request);
 XAN_INIT(aop_proxy);
 XAN_INIT(annotation);
 XAN_INIT(config_class);
@@ -100,7 +103,10 @@ PHP_MINIT_FUNCTION(xannotation)
     ZEND_INIT_MODULE_GLOBALS(xannotation, NULL, NULL);
 #endif
 	xan_init();
+	app_init();
+	view_init();
 	loader_init();
+	request_init();
 	aop_proxy_init();
 	annotation_init();
 	config_class_init();
@@ -132,8 +138,28 @@ PHP_RINIT_FUNCTION(xannotation)
 	ZEND_TSRMLS_CACHE_UPDATE();
 #endif
 
-	ZVAL_NULL(&XAN_G(class_di));
+	ZVAL_NULL(&XAN_G(aliases));
+    array_init(&XAN_G(class_di));
 	ZVAL_NULL(&XAN_G(call_chain));
+	ZVAL_NULL(&XAN_G(url_get_str));
+
+	/* Some default setting for the Xan\App */
+	/* GET pattern */
+	XAN_G(url_pattern) 		= 0;
+	XAN_G(must_url_suffix) 	= 0;
+	XAN_G(auto_render) 		= 0;
+	array_init(&XAN_G(allow_modules));
+	ZVAL_STRING(&XAN_G(url_suffix), "html");
+	ZVAL_STRING(&XAN_G(url_get_str), "_xurl");
+	ZVAL_STRING(&XAN_G(application_dir), ".");
+	ZVAL_STRING(&XAN_G(default_namespace), "app");
+	ZVAL_STRING(&XAN_G(view_suffix), "html");
+	ZVAL_STRING(&XAN_G(default_action), "index");
+	ZVAL_STRING(&XAN_G(default_module), "index");
+	ZVAL_STRING(&XAN_G(default_controller), "index");
+	add_next_index_string(&XAN_G(allow_modules), "index");
+
+
 	return SUCCESS;
 }
 /* }}} */
@@ -143,6 +169,10 @@ PHP_RINIT_FUNCTION(xannotation)
  */
 PHP_RSHUTDOWN_FUNCTION(xannotation)
 {
+	/* To free the allow_modules which was an array */
+	zend_array_destroy(Z_ARRVAL(XAN_G(class_di)));
+	zend_array_destroy(Z_ARRVAL(XAN_G(allow_modules)));
+
 	return SUCCESS;
 }
 /* }}} */

@@ -17,25 +17,21 @@
 */
 
 /* $Id$ */
-#ifndef XAN_LOADER_H
-#define XAN_LOADER_H
+#ifndef XAN_NET_HELPER_H
+#define XAN_NET_HELPER_H
 
-#include <string.h>
-#define ALL_ALIAS "all_alias"
+/* Get value from $_GET */
+zval *xan_get_get_vars(const char *get_key);
 
-void is_file(char *path);
-void get_current_cwd(char *path);
-void require_php_file(char *file_name);
-int  xan_require_file(const char * file_name, zval *variables, zval *called_object_ptr, zval *return_view);
-void reverse_zend_string_slash(zend_string *string);
-void auto_load_classfile(zend_string *file, zval *aliases);
-void only_auto_load_file(zend_string *file, zval *aliases);
-void init_class_with_annotations(zend_string *class_name, zval *aliases);
-void recursive_call_method_without_obj(zend_class_entry *ce, zend_string *name);
+/* Get value from $_POST */
+zval *xan_get_post_var(const char *post_key);
 
-extern zend_class_entry *loader_ce;
+/* Get value from $_SERVER */
+zval *xan_get_server_var(const char *server_key);
 
-#endif /*XAN_LOADER_H*/
+#endif /* XAN_NET_HELPER_H */
+
+
 
 
 /*
