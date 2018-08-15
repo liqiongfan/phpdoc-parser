@@ -2,6 +2,25 @@
 
 namespace Xan;
 
+/**
+ * Class View
+ *
+ * Xan\View is the View component for the render engine.
+ * it has the more faster performance then the raw php code rendering engine.
+ * simple use:
+ * <pre>
+ *     $view->render('index')
+ * </pre>
+ *
+ * or if you want set some variables into the temple view file:
+ * <pre>
+ *      $view->render('index', [ 'version' => 'v2.1.1' ]);
+ * </pre>
+ * then in the view `index.html` file you can use the $version variable to get the value: 'v2.1.1'
+ *
+ * @author Josin<774542602@qq.com>
+ * @package Xan
+ */
 class View
 {
     /**

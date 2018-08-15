@@ -3,6 +3,17 @@
 
 namespace Xan;
 
+/**
+ * Class Apps
+ *
+ * Xan\Apps provide features for the MVC programming in PHP code.
+ * if you want to use the Xan to develop the MVC programm, you can use the Xan\Apps
+ * to do the job.
+ *
+ *
+ * @author Josin<774542602@qq.com>
+ * @package Xan
+ */
 class Apps
 {
     /**

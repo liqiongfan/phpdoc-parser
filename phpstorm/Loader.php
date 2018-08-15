@@ -17,7 +17,7 @@ namespace Xan;
  * <pre>
  *   $loader = new Xan\Loader()
  *   $loader->setMap('@app', __DIR__);
- *   $loader->autoLoad();
+ *   $loader->start();[not necessarily]
  * </pre>
  *
  * @package Xan
