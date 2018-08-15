@@ -96,13 +96,11 @@ XAN_METHOD(Loader, __construct)
 XAN_METHOD(Loader, setMap)
 {
     zend_string *alias_name, *alias_path;
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "SS", &alias_name, &alias_path) == FAILURE)
-    {
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "SS", &alias_name, &alias_path) == FAILURE){
         return ;
     }
 
-    if ( *(ZSTR_VAL(alias_name)) != '@' )
-    {
+    if ( *(ZSTR_VAL(alias_name)) != '@' ){
         XAN_INFO(E_ERROR, "$aliasName must be start with `@`!");
     }
 
@@ -120,8 +118,7 @@ XAN_METHOD(Loader, loader)
 {
     zend_string *class_name;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "S", &class_name) == FAILURE)
-    {
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "S", &class_name) == FAILURE){
         return ;
     }
 
@@ -137,8 +134,7 @@ XAN_METHOD(Loader, start)
 {
     zval zcallback, zprepend, zfunc_name, retval, zshow;
     zend_bool prepend = 0;
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|b", &prepend) == FAILURE)
-    {
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|b", &prepend) == FAILURE) {
         return ;
     }
 
@@ -195,10 +191,8 @@ void reverse_zend_string_slash(zend_string *string)
 {
     int i = 0;
     char *str = ZSTR_VAL(string);
-    for (; i < ZSTR_LEN(string); i++)
-    {
-        if ( *(str + i) == '\\' )
-        {
+    for (; i < ZSTR_LEN(string); i++) {
+        if ( *(str + i) == '\\' ) {
             *(str + i) = '/';
         }
     }
@@ -220,7 +214,7 @@ void get_current_cwd(char *path)
     #elif HAVE_GETWD
         ret = VCWD_GETWD(path);
     #endif
-    if (!ret){
+    if (!ret) {
         path[0] = '.';
         path[1] = '\0';
     }
@@ -234,15 +228,11 @@ void get_current_cwd(char *path)
 void is_file(char *path)
 {
     if (access(path, F_OK) == -1) {
-        if (DEBUG_MODE)
-        {
+        if (DEBUG_MODE) {
             XAN_INFO(E_ERROR, "Path: `%s` not exists!", path);
-        }
-        else
-        {
+        } else {
             char *filename = strrchr(path, '/');
-            if ( !filename )
-            {
+            if ( !filename ) {
                 filename = path;
             }
             XAN_INFO(E_ERROR, "Path: `%s` not exists!", filename + 1);
@@ -374,8 +364,7 @@ void init_class_with_annotations(zend_string *class_name, zval *aliases)
 {
     class_name = zend_string_tolower(class_name);
     zend_class_entry *ce = zend_hash_str_find_ptr(CG(class_table), ZSTR_VAL(class_name), ZSTR_LEN(class_name));
-    if ( !ce )
-    {
+    if ( !ce ) {
         return ;
     }
 
@@ -386,8 +375,7 @@ void init_class_with_annotations(zend_string *class_name, zval *aliases)
     get_doc_comment_result(&annotations, get_class_doc_comment(ce));
 
     zval *annos = zend_hash_str_find(Z_ARRVAL(annotations), XAN_STRL("annotations"));
-    if ( !annos || ZVAL_IS_NULL(annos) )
-    {
+    if ( !annos || ZVAL_IS_NULL(annos) ) {
         return ;
     }
 
@@ -395,34 +383,27 @@ void init_class_with_annotations(zend_string *class_name, zval *aliases)
     zval class_obj, retval, class_entry;
     ZVAL_STR(&class_entry, class_name);
 
-    ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(annos), annotation_class_name, annotation_class_value)
-    {
-        if (*ZSTR_VAL(annotation_class_name) == '\\')
-        {
+    ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(annos), annotation_class_name, annotation_class_value) {
+        if (*ZSTR_VAL(annotation_class_name) == '\\') {
             annotation_class_name = strpprintf(0, "%s", ZSTR_VAL(annotation_class_name) + 1);
         }
 
-        if (zend_string_equals_literal(annotation_class_name, XAN_ANNOTATIONS "AttrAnnotation"))
-        {
+        if (zend_string_equals_literal(annotation_class_name, XAN_ANNOTATIONS "AttrAnnotation")) {
             object_init_ex(&class_obj, class_attr_ce);
             zend_call_method_with_2_params(&class_obj, class_attr_ce, NULL, "input", &retval, &class_entry, annotation_class_value);
         }
-        else if (zend_string_equals_literal(annotation_class_name, XAN_ANNOTATIONS "ConstAnnotation" ))
-        {
+        else if (zend_string_equals_literal(annotation_class_name, XAN_ANNOTATIONS "ConstAnnotation" )) {
             object_init_ex(&class_obj, class_const_ce);
             zend_call_method_with_2_params(&class_obj, class_const_ce, NULL, "input", &retval, &class_entry, annotation_class_value);
         }
-        else
-        {
+        else {
 again:
             o_ce = zend_hash_find_ptr( CG(class_table), strpprintf(0, "%s", ZSTR_VAL(zend_string_tolower(annotation_class_name))) );
-            if ( !o_ce )
-            {
+            if ( !o_ce ) {
                 only_auto_load_file(annotation_class_name, aliases);
                 goto again;
             }
-            if ( !instanceof_function(o_ce, annotation_ce) )
-            {
+            if ( !instanceof_function(o_ce, annotation_ce) ) {
                 zend_array_destroy(Z_ARRVAL(annotations));
                 XAN_INFO(E_ERROR, "Annotation class : `%s` must be implemented from Annotation interface!", ZSTR_VAL(annotation_class_name) );
                 return ;
@@ -448,8 +429,7 @@ void auto_load_classfile(zend_string *class_name, zval *aliases)
     size_t class_alias_len = 0;
 
     char *slash_pos = strchr(ZSTR_VAL(class_name), '\\');
-    if ( !slash_pos )
-    {
+    if ( !slash_pos ) {
         class_alias_len = ZSTR_LEN(class_name);
         memcpy(class_alias, ZSTR_VAL(class_name), class_alias_len);
 
@@ -459,23 +439,18 @@ void auto_load_classfile(zend_string *class_name, zval *aliases)
         require_php_file(ZSTR_VAL(real_file_path));
         init_class_with_annotations(class_name, aliases);
         return ;
-    }
-    else
-    {
+    } else {
         class_alias_len = slash_pos - ZSTR_VAL(class_name);
     }
     
     memcpy(class_alias, ZSTR_VAL(class_name), class_alias_len);
 
-    if (!zend_hash_num_elements(Z_ARRVAL_P(aliases)))
-    {
+    if (!zend_hash_num_elements(Z_ARRVAL_P(aliases))) {
         XAN_INFO(E_ERROR, "Please setMap the aliasName before autoLoad()!");
     }
 
-    ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(aliases), zkey, zvalue)
-    {
-        if ( !strncasecmp(ZSTR_VAL(zkey), XAN_STRL(class_alias)) )
-        {
+    ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(aliases), zkey, zvalue) {
+        if ( !strncasecmp(ZSTR_VAL(zkey), XAN_STRL(class_alias)) ) {
             zend_string *real_file_path  = strpprintf(0, "%s/%s.php", Z_STRVAL_P(zvalue), slash_pos + 1);
             reverse_zend_string_slash(real_file_path);
             is_file(ZSTR_VAL(real_file_path));
@@ -499,8 +474,7 @@ void only_auto_load_file(zend_string *class_name, zval *aliases)
     size_t class_alias_len = 0;
 
     char *slash_pos = strchr(ZSTR_VAL(class_name), '\\');
-    if ( !slash_pos )
-    {
+    if ( !slash_pos ) {
         class_alias_len = ZSTR_LEN(class_name);
         memcpy(class_alias, ZSTR_VAL(class_name), class_alias_len);
 
@@ -509,23 +483,18 @@ void only_auto_load_file(zend_string *class_name, zval *aliases)
         is_file(ZSTR_VAL(real_file_path));
         require_php_file(ZSTR_VAL(real_file_path));
         return ;
-    }
-    else
-    {
+    } else {
         class_alias_len = slash_pos - ZSTR_VAL(class_name);
     }
     
     memcpy(class_alias, ZSTR_VAL(class_name), class_alias_len);
 
-    if (!zend_hash_num_elements(Z_ARRVAL_P(aliases)))
-    {
+    if (!zend_hash_num_elements(Z_ARRVAL_P(aliases))) {
         XAN_INFO(E_ERROR, "Please setMap the aliasName before autoLoad()!");
     }
 
-    ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(aliases), zkey, zvalue)
-    {
-        if ( !strncasecmp(ZSTR_VAL(zkey), XAN_STRL(class_alias)) )
-        {
+    ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(aliases), zkey, zvalue) {
+        if ( !strncasecmp(ZSTR_VAL(zkey), XAN_STRL(class_alias)) ) {
             zend_string *real_file_path  = strpprintf(0, "%s/%s.php", Z_STRVAL_P(zvalue), slash_pos + 1);
             reverse_zend_string_slash(real_file_path);
             is_file(ZSTR_VAL(real_file_path));

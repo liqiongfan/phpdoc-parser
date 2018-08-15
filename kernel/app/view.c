@@ -64,16 +64,13 @@ XAN_METHOD(View, render)
 {
     zval *variables = NULL, *dvariables, *value;
     zend_string *template_file, *render_file, *key;
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "S|z", &template_file, &variables) == FAILURE)
-    {
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "S|z", &template_file, &variables) == FAILURE) {
         return ;
     }
 
     dvariables = zend_read_property(XAN_ENTRY_OBJ(getThis()), XAN_STRL("variables"), 1, NULL);
-    if ( variables && !ZVAL_IS_NULL(variables) )
-    {
-        if ( !dvariables || ZVAL_IS_NULL(dvariables))
-        {
+    if ( variables && !ZVAL_IS_NULL(variables) ) {
+        if ( !dvariables || ZVAL_IS_NULL(dvariables)) {
             array_init(dvariables);
         }
         zend_hash_merge(Z_ARRVAL_P(dvariables), Z_ARRVAL_P(variables), zval_add_ref, 0);
@@ -99,13 +96,11 @@ XAN_METHOD(View, assign)
     zend_string *name;
     zval *variables, *dvariables;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "Sz", &name, &variables) == FAILURE)
-    {
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "Sz", &name, &variables) == FAILURE) {
         return ;
     }
 
-    if (ZSTR_VAL(name)[0] == '\0')
-    {
+    if (ZSTR_VAL(name)[0] == '\0') {
         XAN_INFO(E_ERROR, "$name was invalid!");
     }
 
@@ -120,8 +115,7 @@ XAN_METHOD(View, assign)
 XAN_METHOD(View, setAutoRender)
 {
     zend_bool status = 1;
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|b", &status) == FAILURE)
-    {
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|b", &status) == FAILURE) {
         return ;
     }
 

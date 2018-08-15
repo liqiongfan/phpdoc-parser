@@ -79,19 +79,16 @@ XAN_METHOD(AopProxy, __construct)
 XAN_METHOD(AopProxy, instance)
 {
     zend_string *class_name;
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "S", &class_name) == FAILURE)
-    {
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "S", &class_name) == FAILURE) {
         return ;
     }
 
-    if ( !ZSTR_LEN(class_name) )
-    {
+    if ( !ZSTR_LEN(class_name) ) {
         XAN_INFO(E_ERROR, "Class `%s` not valid.", ZSTR_VAL(class_name));
     }
 
     zend_class_entry *ce = zend_lookup_class(class_name);
-    if ( !ce )
-    {
+    if ( !ce ) {
         XAN_INFO(E_ERROR, "Class `%s` not found.", ZSTR_VAL(class_name));
     }
 
@@ -105,8 +102,7 @@ XAN_METHOD(AopProxy, __call)
     zval *parameters;
     zend_string *function_name;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "Sa", &function_name, &parameters) == FAILURE)
-    {
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "Sa", &function_name, &parameters) == FAILURE) {
         return ;
     }
 
@@ -125,27 +121,23 @@ XAN_METHOD(AopProxy, __set)
     zend_string *key;
     zval *value, class_obj, z_key;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "Sz", &key, &value) == FAILURE)
-    {
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "Sz", &key, &value) == FAILURE) {
         return ;
     }
 
     /* The class container:`&XAN_G(class_di)` */
-    if (ZVAL_IS_NULL(&XAN_G(class_di)))
-    {
+    if (ZVAL_IS_NULL(&XAN_G(class_di))) {
         array_init(&XAN_G(class_di));
     }
 
     /* Proxy class */
     zval *class_name = zend_read_property(XAN_ENTRY_OBJ(getThis()), XAN_STRL(CLASS_CE), 1, NULL);
-    if ( !class_name )
-    {
+    if ( !class_name ) {
         XAN_INFO(E_ERROR, "Please use the `instance` to get an object proxy.");
     }
     /* Proxy class_entry */
     zend_class_entry *ce = zend_lookup_class(zend_string_tolower(Z_STR_P(class_name)));
-    if ( !ce )
-    {
+    if ( !ce ) {
         XAN_INFO(E_ERROR, "Class `%s` not found.", Z_STRVAL_P(class_name));
     }
 
@@ -162,26 +154,22 @@ XAN_METHOD(AopProxy, __get)
 {
     zval class_obj, z_key;
     zend_string *key;
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "S", &key) ==FAILURE)
-    {
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "S", &key) ==FAILURE) {
         return ;
     }
 
     /* The class container:`&XAN_G(class_di)` */
-    if (ZVAL_IS_NULL(&XAN_G(class_di)))
-    {
+    if (ZVAL_IS_NULL(&XAN_G(class_di))) {
         array_init(&XAN_G(class_di));
     }
     /* Proxy class */
     zval *class_name = zend_read_property(XAN_ENTRY_OBJ(getThis()), XAN_STRL(CLASS_CE), 1, NULL);
-    if ( !class_name )
-    {
+    if ( !class_name ) {
         XAN_INFO(E_ERROR, "Please use the `instance` to get an object proxy.");
     }
     /* Proxy class_entry */
     zend_class_entry *ce = zend_lookup_class(zend_string_tolower(Z_STR_P(class_name)));
-    if ( !ce )
-    {
+    if ( !ce ) {
         XAN_INFO(E_ERROR, "Class `%s` not found.", Z_STRVAL_P(class_name));
     }
 
@@ -218,12 +206,9 @@ XAN_INIT(aop_proxy)
  */
 void get_object_from_di(zval *di, zend_string *class_name, zval *class_obj, zend_class_entry *ce)
 {
-    if (zend_hash_find( Z_ARRVAL_P(di), zend_string_tolower(class_name)))
-    {
+    if (zend_hash_find( Z_ARRVAL_P(di), zend_string_tolower(class_name))) {
         ZVAL_COPY(class_obj, zend_hash_find( Z_ARRVAL_P(di), zend_string_tolower(class_name)));
-    }
-    else
-    {
+    } else {
         object_init_ex(class_obj, ce);
         add_assoc_zval(di, ZSTR_VAL(zend_string_tolower(class_name)), class_obj);
     }
@@ -235,8 +220,7 @@ void get_object_from_di(zval *di, zend_string *class_name, zval *class_obj, zend
  */
 void call_method_with_object_array(zval *object, char *method_name, uint32_t param_counts, zval params[], zval *ret_val)
 {
-    if (XAN_CHECK_METHOD(object, method_name) != NULL)
-    {
+    if (XAN_CHECK_METHOD(object, method_name) != NULL) {
         zval function_name;
         ZVAL_STRING(&function_name, method_name);
         call_user_function( NULL, object, &function_name, ret_val, param_counts, params );
@@ -252,8 +236,7 @@ void call_method_with_object_array(zval *object, char *method_name, uint32_t par
 void call_method_with_object_zval( zval *object, char *method_name, zval *parameters TSRMLS_CC, zval *ret_val )
 {
     uint32_t p_counts = !parameters ? 0 : zend_hash_num_elements(Z_ARRVAL_P(parameters));
-    if ( p_counts ) 
-    {
+    if ( p_counts )  {
         uint32_t n = 0;
         zval *val_para;
 
@@ -266,9 +249,7 @@ void call_method_with_object_zval( zval *object, char *method_name, zval *parame
         call_method_with_object_array( object, method_name, p_counts, params, ret_val );
 
         efree(params);
-    }
-    else
-    {
+    } else {
         call_method_with_object_array(object, method_name, 0, NULL, ret_val);
     }
 }
@@ -296,20 +277,15 @@ void run_method(zval function_value[], zval *retval)
 
     if ( !function_value || ZVAL_IS_NULL(function_value) ) return ;
 
-    if (zend_hash_num_elements( Z_ARRVAL_P(function_value) )  == 1 )
-    {
+    if (zend_hash_num_elements( Z_ARRVAL_P(function_value) )  == 1 ) {
         fun_name = zend_hash_index_find(Z_ARRVAL_P(function_value), 1);
-    }
-    else
-    {
+    } else {
         fun_name = zend_hash_str_find( Z_ARRVAL_P(function_value), XAN_STRL(VALUE) );
-        if ( !fun_name )
-        {
+        if ( !fun_name ) {
             fun_name = zend_hash_index_find( Z_ARRVAL_P(function_value), 0);
         }
         zval *paras = zend_hash_str_find( Z_ARRVAL_P(function_value), XAN_STRL(PARAMETERS) );
-        if ( Z_STRLEN_P(paras) )
-        {
+        if ( Z_STRLEN_P(paras) ) {
             php_explode(strpprintf(0, "%s", "||"), Z_STR_P(paras), &func_parameters, ZEND_LONG_MAX);
         }
     }
@@ -324,8 +300,7 @@ void run_method(zval function_value[], zval *retval)
     zval *method_name = zend_hash_index_find(Z_ARRVAL(val), 1);
     /* func_parameters */
     
-    if (Z_STRVAL_P(c_name)[0] == '\\')
-    {
+    if (Z_STRVAL_P(c_name)[0] == '\\') {
         ZVAL_STRING(c_name, Z_STRVAL_P(c_name) + 1);
     }
     
@@ -344,23 +319,17 @@ void combine_xml_data(zval *data, smart_str *result)
 
     Bucket *bucket;
 
-    ZEND_HASH_FOREACH_BUCKET(Z_ARRVAL_P(data), bucket)
-    {
+    ZEND_HASH_FOREACH_BUCKET(Z_ARRVAL_P(data), bucket) {
         if ( !bucket->key ) bucket->key = strpprintf(0, "%s", "key");
         smart_str_appendc(result, '<');
         smart_str_appends(result, ZSTR_VAL(bucket->key));
         smart_str_appendc(result, '>');
         /* <![CDATA[ ]]> */
-        if ( Z_TYPE(bucket->val) == IS_ARRAY )
-        {
+        if ( Z_TYPE(bucket->val) == IS_ARRAY ) {
             combine_xml_data(&(bucket->val), result);
-        }
-        else if ( Z_TYPE(bucket->val) == IS_LONG )
-        {
+        } else if ( Z_TYPE(bucket->val) == IS_LONG ) {
             smart_str_append_long(result, Z_LVAL(bucket->val));
-        }
-        else
-        {
+        } else {
             if (Z_TYPE(bucket->val) != IS_STRING)
                 convert_to_string(&bucket->val);
             smart_str_appends(result, "<![CDATA[");
@@ -384,36 +353,28 @@ void call_annotation_function(zval *proxy_obj, zend_string *caller_class_ce, zen
     zval class_name, caller_obj, ret_val, *cc_name;
 
     /* Proxy class */
-    if ( proxy_obj && !caller_class_ce )
-    {
+    if ( proxy_obj && !caller_class_ce ) {
         cc_name = zend_read_property(XAN_ENTRY_OBJ(proxy_obj), XAN_STRL(CLASS_CE), 1, NULL);
-        if ( !cc_name )
-        {
+        if ( !cc_name ) {
             XAN_INFO(E_ERROR, "Please use the `instance` to get an object proxy.");
         }
         ZVAL_COPY(&class_name, cc_name);
-    }
-    else
-    {
+    } else {
         ZVAL_STR(&class_name, caller_class_ce);
     }
 
     /* Find whether the function be called was in chain. if exists. error info will be showed */
     zend_string *chain_method = strpprintf(0, "%s%s", Z_STRVAL(class_name), ZSTR_VAL(function_name));
     zval *in_result = STR_FIND( XAN_G(call_chain), chain_method );
-    if ( in_result )
-    {
+    if ( in_result ) {
         XAN_INFO(E_ERROR, "Recursive calling : `%s::%s`\n", Z_STRVAL(class_name), ZSTR_VAL(function_name));
-    }
-    else
-    {
+    } else {
         add_assoc_string( &XAN_G(call_chain), ZSTR_VAL(chain_method), ZSTR_VAL(chain_method) );
     }
 
     /* Proxy class_entry */
     ce = zend_lookup_class(zend_string_tolower(Z_STR(class_name)));
-    if ( !ce )
-    {
+    if ( !ce ) {
         XAN_INFO(E_ERROR, "Class `%s` not found.", Z_STRVAL(class_name));
     }
 
@@ -425,13 +386,11 @@ void call_annotation_function(zval *proxy_obj, zend_string *caller_class_ce, zen
     get_doc_comment_result(&annotations, get_class_doc_comment(ce) );
 
     zval *class_annotations = STRING_FIND( annotations, "annotations");
-    if ( !class_annotations || ZVAL_IS_NULL(class_annotations) )
-    {
+    if ( !class_annotations || ZVAL_IS_NULL(class_annotations) ) {
         goto exit_no_annotation;
     }
     zval *aspect = STRING_FIND_P( class_annotations, "Aspect");
-    if ( aspect )
-    {
+    if ( aspect ) {
         /* Found the aspect annotation */
         zend_string *func_name;
         zval func_annotations, *function_value;
@@ -441,8 +400,7 @@ void call_annotation_function(zval *proxy_obj, zend_string *caller_class_ce, zen
         get_doc_comment_result(&func_annotations, get_function_doc_comment(&calling_function->op_array));
         zval *all_annotations = STRING_FIND( func_annotations, "annotations" );
         
-        if ( all_annotations && Z_H_N_E(Z_ARRVAL_P(all_annotations)))
-        {
+        if ( all_annotations && Z_H_N_E(Z_ARRVAL_P(all_annotations))) {
             zval *before_func_name  = STRING_FIND_P(all_annotations, "before");
             zval *after_func_name   = STRING_FIND_P(all_annotations, "after");
             zval *success_func_name = STRING_FIND_P(all_annotations, "success");
@@ -457,21 +415,17 @@ void call_annotation_function(zval *proxy_obj, zend_string *caller_class_ce, zen
             call_method_with_object_zval( &caller_obj, ZSTR_VAL(ZS_LOWER(function_name)), parameters TSRMLS_CC, &ret_val );
 
             /* If set the api_format tag */
-            if ( api_format && !ZVAL_IS_NULL(api_format) )
-            {
+            if ( api_format && !ZVAL_IS_NULL(api_format) ) {
                 sapi_header_line ctr = {0};
 
-                if (Z_TYPE_P(api_format) == IS_ARRAY)
-                {
+                if (Z_TYPE_P(api_format) == IS_ARRAY) {
                     zval *format = STRING_FIND_P(api_format, "type");
                     zval *charset = STRING_FIND_P(api_format, "charset");
-                    if ( charset )
-                    {
+                    if ( charset ) {
                         if ( !Z_STRLEN_P(charset) )
                             charset = NULL;
                     }
-                    if ( format && zend_string_equals_literal(Z_STR_P(format), "JSON"))
-                    {
+                    if ( format && zend_string_equals_literal(Z_STR_P(format), "JSON")) {
                         ctr.line_len = spprintf(
                             &(ctr.line), 
                             0, 
@@ -484,8 +438,7 @@ void call_annotation_function(zval *proxy_obj, zend_string *caller_class_ce, zen
                         efree(ctr.line);
 
                         XAN_G(auto_render) = 0;
-                        if (Z_TYPE(ret_val) == IS_ARRAY)
-                        {
+                        if (Z_TYPE(ret_val) == IS_ARRAY) {
                             smart_str json_str = { 0 };
                             php_json_encode(&json_str, &ret_val, 256);
                             smart_str_0(&json_str);
@@ -493,12 +446,9 @@ void call_annotation_function(zval *proxy_obj, zend_string *caller_class_ce, zen
                             smart_str_free(&json_str);
                             ZVAL_TRUE(&ret_val);
                         }
-                    }
-                    else if ( format && zend_string_equals_literal(Z_STR_P(format), "XML"))
-                    {
+                    } else if ( format && zend_string_equals_literal(Z_STR_P(format), "XML")) {
                         XAN_G(auto_render) = 0;
-                        if (Z_TYPE(ret_val) == IS_ARRAY)
-                        {
+                        if (Z_TYPE(ret_val) == IS_ARRAY) {
                             ctr.line_len = spprintf(
                                 &(ctr.line), 
                                 0, 
@@ -529,13 +479,10 @@ void call_annotation_function(zval *proxy_obj, zend_string *caller_class_ce, zen
             }
 
             /* success or failure function */
-            if (Z_TYPE_INFO(ret_val) == IS_TRUE)
-            {
+            if (Z_TYPE_INFO(ret_val) == IS_TRUE) {
                 /* success */
                 run_method(success_func_name, retval);
-            }
-            else
-            {   /* failure */
+            } else {   /* failure */
                 run_method(failure_func_name, retval);
             }
 

@@ -43,6 +43,7 @@ XAN_INIT(app);
 XAN_INIT(view);
 XAN_INIT(loader);
 XAN_INIT(request);
+XAN_INIT(response);
 XAN_INIT(aop_proxy);
 XAN_INIT(annotation);
 XAN_INIT(config_class);
@@ -107,6 +108,7 @@ PHP_MINIT_FUNCTION(xannotation)
 	view_init();
 	loader_init();
 	request_init();
+	response_init();
 	aop_proxy_init();
 	annotation_init();
 	config_class_init();

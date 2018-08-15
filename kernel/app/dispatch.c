@@ -41,26 +41,24 @@ void xan_dispatch_url(zend_string *url)
 {
     /* Some variables */
     char status = 0;
+    zend_class_entry *controller_class;
     zval *module_name, controller_obj, retval, temp_url_array;
     zend_string *module_path, *controller_path, *controller_class_name, *action_name;
 
     /* If passing the url to parsing the url to obtain the module & controller & action */
-    if ( url )
-    {
+    if ( url ) {
         int i = 0, j;
         zval *key, *value;
         array_init(&temp_url_array);
 
         /* If user explicitly use the urlSuffix, then we must keep the url end with the given suffix */
-        if (XAN_G(must_url_suffix))
-        {
+        if (XAN_G(must_url_suffix)) {
             char *dot_pos = strrchr(ZSTR_VAL(url), '.');
             if (!dot_pos)
                 XAN_INFO(E_ERROR, "The url must be ended with : `%s`!", Z_STRVAL(XAN_G(url_suffix)));
             
             if ( (Z_STRLEN(XAN_G(url_suffix)) != strlen(dot_pos + 1) )
-                || ( memcmp(Z_STRVAL(XAN_G(url_suffix)), dot_pos + 1, Z_STRLEN(XAN_G(url_suffix))) != 0 ) )
-            {
+                || ( memcmp(Z_STRVAL(XAN_G(url_suffix)), dot_pos + 1, Z_STRLEN(XAN_G(url_suffix))) != 0 ) ) {
                 zend_array_destroy(Z_ARRVAL(temp_url_array));
                 XAN_INFO(E_ERROR, "Url wrong!");
             }
@@ -99,8 +97,7 @@ void xan_dispatch_url(zend_string *url)
         zval *global_gets = xan_get_get_vars(NULL);
 
         /* if have other path variables put it into the $_GET */
-        for (j = i; j < zend_hash_num_elements(Z_ARRVAL(temp_url_array)) + i; j++)
-        {
+        for (j = i; j < zend_hash_num_elements(Z_ARRVAL(temp_url_array)) + i; j++) {
             key = zend_hash_index_find(Z_ARRVAL(temp_url_array), j++);
             if ( !key ) break;
             value = zend_hash_index_find(Z_ARRVAL(temp_url_array), j);
@@ -119,10 +116,8 @@ void xan_dispatch_url(zend_string *url)
 
     /* Using the module & controller & action to do the job */
     /* 1. to judge the module was allowed or not to access, if not, dispaly the error info */
-    ZEND_HASH_FOREACH_VAL(Z_ARRVAL(XAN_G(allow_modules)), module_name)
-    {
-        if ( strncasecmp(Z_STRVAL(XAN_G(default_module)), Z_STRVAL_P(module_name), Z_STRLEN_P(module_name)) == 0 )
-        {
+    ZEND_HASH_FOREACH_VAL(Z_ARRVAL(XAN_G(allow_modules)), module_name) {
+        if ( strncasecmp(Z_STRVAL(XAN_G(default_module)), Z_STRVAL_P(module_name), Z_STRLEN_P(module_name)) == 0 ) {
             status = 1;
             break;
         }
@@ -140,22 +135,24 @@ void xan_dispatch_url(zend_string *url)
     is_file(ZSTR_VAL(controller_path));
     /* Z_STRVAL(XAN_G(default_controller))[0] = tolower(Z_STRVAL(XAN_G(default_controller))[0]); */
 
-    /*Require the Controller file*/
-    require_php_file(ZSTR_VAL(controller_path));
-
     /* After requiring the controller file, find the controller class exists or not. */
     controller_class_name = strpprintf( 
         0, "%s\\modules\\%s\\controllers\\%s", Z_STRVAL(XAN_G(default_namespace)), 
         Z_STRVAL(XAN_G(default_module)), Z_STRVAL(XAN_G(default_controller)) 
     );
 
-    /* Do the Annotation parsing */
-    init_class_with_annotations(controller_class_name, &XAN_G(aliases));
+class_entry:
+    /* To find the controller class_entry */
+    controller_class = zend_hash_find_ptr( CG(class_table), zend_string_tolower(controller_class_name) );
+    if ( !controller_class ) {
+        /*Require the Controller file*/
+        require_php_file(ZSTR_VAL(controller_path));
 
-    zend_class_entry *controller_class = zend_hash_find_ptr( CG(class_table), zend_string_tolower(controller_class_name) );
-    if (!controller_class)
-    {
-        XAN_INFO( E_ERROR, "Controller class `%s` not found!", Z_STRVAL(XAN_G(default_controller)) );
+        /* Do the Annotation parsing */
+        init_class_with_annotations(controller_class_name, &XAN_G(aliases));
+
+        /* If required the php file */
+        goto class_entry;
     }
 
     /* Calling the init function */
@@ -172,13 +169,11 @@ void xan_dispatch_url(zend_string *url)
     call_annotation_function(NULL, controller_class_name, action_name, NULL, &retval);
 
     /* If in auto render mode, to auto render the view */
-    if ( XAN_G(auto_render) )
-    {
+    if ( XAN_G(auto_render) ) {
         zval view_obj, t_ret;
         zend_class_entry *view_ce = zend_hash_str_find_ptr(CG(class_table), XAN_STRL("xan\\view"));
         get_object_from_di(&XAN_G(class_di), strpprintf(0, "%s", "view"), &view_obj, view_ce);
-        if (Z_TYPE_P(&view_obj) == IS_OBJECT)
-        {
+        if (Z_TYPE_P(&view_obj) == IS_OBJECT) {
             zend_call_method_with_0_params(&view_obj, view_ce, NULL, ZEND_CONSTRUCTOR_FUNC_NAME, &t_ret);
             zend_call_method_with_1_params( &view_obj, view_ce, NULL, "render", &t_ret, &XAN_G(default_action) );
         }

@@ -77,8 +77,7 @@ XAN_METHOD(Request, get)
     zend_string *key = NULL;
     zval *default_value = NULL, *filters = NULL, *val;
 
-    if ( zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|Szz", &key, &filters, &default_value ) == FAILURE )
-    {
+    if ( zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|Szz", &key, &filters, &default_value ) == FAILURE ) {
         return ;
     }
 
@@ -88,13 +87,10 @@ XAN_METHOD(Request, get)
 
     val = STR_FIND_P(get_vars, key);
 
-    if ( !val )
-    {
+    if ( !val ) {
         if ( !default_value ) RETURN_NULL()
         else RETURN_ZVAL(default_value, 1, NULL)
-    }
-    else
-    {
+    } else {
         filter_callback(val, filters, return_value);
     }
 }/*}}}*/
@@ -109,8 +105,7 @@ XAN_METHOD(Request, getPost)
     zend_string *key = NULL;
     zval *default_value = NULL, *filters = NULL, *val;
 
-    if ( zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|Szz", &key, &filters, &default_value ) == FAILURE )
-    {
+    if ( zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|Szz", &key, &filters, &default_value ) == FAILURE ) {
         return ;
     }
 
@@ -120,13 +115,10 @@ XAN_METHOD(Request, getPost)
 
     val = STR_FIND_P(post_vars, key);
 
-    if ( !val )
-    {
+    if ( !val ){
         if ( !default_value ) RETURN_NULL()
         else RETURN_ZVAL(default_value, 1, NULL)
-    }
-    else
-    {
+    } else {
         filter_callback(val, filters, return_value);
     }
 }/*}}}*/
@@ -140,8 +132,7 @@ XAN_METHOD(Request, getServer)
     zend_string *key = NULL;
     zval *default_value = NULL, *filters = NULL, *val;
 
-    if ( zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|Szz", &key, &filters, &default_value ) == FAILURE )
-    {
+    if ( zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|Szz", &key, &filters, &default_value ) == FAILURE ) {
         return ;
     }
 
@@ -151,13 +142,10 @@ XAN_METHOD(Request, getServer)
 
     val = STR_FIND_P(server_vars, key);
 
-    if ( !val )
-    {
+    if ( !val ) {
         if ( !default_value ) RETURN_NULL()
         else RETURN_ZVAL(default_value, 1, NULL)
-    }
-    else
-    {
+    } else {
         filter_callback(val, filters, return_value);
     }
 }/*}}}*/
@@ -190,32 +178,22 @@ void filter_callback(zval *val, zval *filters, zval *retval)
     zend_string *key = NULL;
     zval filter_call, *each_call;
 
-    if ( !val )
-    {
+    if ( !val ) {
         ZVAL_NULL(retval);
         return ;
-    }
-    else
-    {
-        if ( !filters ) 
-        {
+    } else {
+        if ( !filters ) {
             ZVAL_COPY(retval, val);
             return ;
-        }
-        else
-        {
-            if ( Z_TYPE_P(filters) == IS_STRING && !Z_STRLEN_P(filters) ) 
-            {
+        } else {
+            if ( Z_TYPE_P(filters) == IS_STRING && !Z_STRLEN_P(filters) )  {
                 ZVAL_COPY(retval, val);
                 return ;
-            }
-            else if ( Z_TYPE_P(filters) == IS_STRING && Z_STRLEN_P(filters) )
-            {
+            } else if ( Z_TYPE_P(filters) == IS_STRING && Z_STRLEN_P(filters) ) {
                 ZVAL_COPY(retval, val);
                 array_init(&filter_call);
                 php_explode( strpprintf(0, "%s", "|"), Z_STR_P(filters), &filter_call, ZEND_LONG_MAX );
-                ZEND_HASH_FOREACH_VAL(Z_ARRVAL(filter_call), each_call) 
-                {
+                ZEND_HASH_FOREACH_VAL(Z_ARRVAL(filter_call), each_call) {
                     zval params[1] = { *retval };
                     if ( Z_TYPE_P(each_call) == IS_STRING && Z_STRLEN_P(each_call) ) {
                         call_user_function(CG(function_table), NULL, each_call, retval, 1, params);
@@ -223,9 +201,7 @@ void filter_callback(zval *val, zval *filters, zval *retval)
 
                 } ZEND_HASH_FOREACH_END();
                 zend_array_destroy(Z_ARRVAL(filter_call));
-            }
-            else if ( zend_is_callable(filters, 1, &key) )
-            {
+            } else if ( zend_is_callable(filters, 1, &key) ){
                 zval params[1] = { *val };
                 call_user_function(NULL, NULL, filters, retval, 1, params );
             }

@@ -63,35 +63,30 @@ XAN_METHOD(ConstAnnotation, input)
 {
     zval *annotations;
     zend_string *ce_name;
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "Sa", &ce_name, &annotations) == FAILURE)
-    {
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "Sa", &ce_name, &annotations) == FAILURE) {
         return ;
     }
 
-    if ( !zend_hash_num_elements(Z_ARRVAL_P(annotations)) )
-    {
+    if ( !zend_hash_num_elements(Z_ARRVAL_P(annotations)) ) {
         return ;
     }
 
     ce_name = zend_string_tolower(ce_name);
     zend_class_entry *ce = zend_hash_str_find_ptr(CG(class_table), ZSTR_VAL(ce_name), ZSTR_LEN(ce_name));
-    if ( !ce )
-    {
+    if ( !ce ) {
         return ;
     }
 
     zval *each_class_const_value;
     zend_string *each_class_const_name;
 
-    ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(annotations), each_class_const_name, each_class_const_value)
-    {
+    ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(annotations), each_class_const_name, each_class_const_value) {
         zend_class_constant *constant = emalloc(sizeof(zend_class_constant));
         ZVAL_COPY( &constant->value, each_class_const_value);
         constant->ce = ce;
         constant->doc_comment = NULL;
         constant->value.u2.access_flags = ZEND_ACC_PUBLIC;
         add_const_to_class(ce, each_class_const_name, constant);
-
     } ZEND_HASH_FOREACH_END();
 
 }/*}}}*/

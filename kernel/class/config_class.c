@@ -72,20 +72,17 @@ XAN_METHOD(ConfigClass, setConstant)
     zval *value;
     zend_string *class_name, *key;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "SSz", &class_name, &key, &value) == FAILURE)
-    {
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "SSz", &class_name, &key, &value) == FAILURE) {
         return ;
     }
 
-    if ( !ZSTR_LEN(class_name) )
-    {
+    if ( !ZSTR_LEN(class_name) ) {
         XAN_INFO(E_ERROR, "$className must be valid class name with namespace.");
     }
 
 
     zend_class_entry *ce = zend_lookup_class(zend_string_tolower(class_name));
-    if ( !ce )
-    {
+    if ( !ce ) {
         XAN_INFO(E_ERROR, "Can't found class `%s`!", ZSTR_VAL(class_name));
     }
 
@@ -109,21 +106,17 @@ XAN_METHOD(ConfigClass, setAttribute)
     zval *value, *object, member;
     zend_long flags = ZEND_ACC_PUBLIC;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "oSz|l", &object, &key, &value, &flags) == FAILURE)
-    {
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "oSz|l", &object, &key, &value, &flags) == FAILURE) {
         return ;
     }
 
     zend_property_info *property_info = zend_hash_str_find_ptr( &Z_OBJCE_P(object)->properties_info, ZSTR_VAL(key), ZSTR_LEN(key) );
-    if ( property_info )
-    {
+    if ( property_info ) {
         property_info->flags = flags;
         uint32_t property_offset = property_info->offset;
         zval *variable_ptr = OBJ_PROP( Z_OBJ_P(object), property_offset );
         zend_assign_to_variable(variable_ptr, value, IS_CV);
-    }
-    else
-    {
+    } else {
         ZVAL_STR(&member, key);
         Z_OBJ_HT_P(object)->write_property(object, &member, value, NULL );
     }
@@ -138,26 +131,22 @@ XAN_METHOD(ConfigClass, setAccessFlags)
     zend_string *class_name, *key;
     zend_long flags = ZEND_ACC_PUBLIC;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "SSl", &class_name, &key, &flags) == FAILURE)
-    {
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "SSl", &class_name, &key, &flags) == FAILURE) {
         return ; 
     }
 
-    if ( !ZSTR_LEN(class_name) )
-    {
+    if ( !ZSTR_LEN(class_name) ) {
         XAN_INFO(E_ERROR, "$className must be valid class name with namespace.");
     }
 
     zend_class_entry *ce = zend_lookup_class(class_name);
-    if ( !ce )
-    {
+    if ( !ce ) {
         XAN_INFO(E_ERROR, "Can't found class `%s`!", ZSTR_VAL(class_name));
     }
 
     zend_property_info *property_info = zend_hash_str_find_ptr( &ce->properties_info, ZSTR_VAL(key), ZSTR_LEN(key) );
 
-    if ( !property_info )
-    {
+    if ( !property_info ) {
         RETURN_FALSE;
     }
 

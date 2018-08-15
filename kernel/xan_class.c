@@ -83,27 +83,21 @@ XAN_METHOD(Xan, __construct)
 XAN_METHOD(Xan, getClassDocComment)
 {
     zval *class_name;
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &class_name) == FAILURE)
-    {
+    if ( zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &class_name ) == FAILURE) {
         return ;
     }
 
-    if (Z_TYPE_P(class_name) == IS_OBJECT)
-    {
+    if ( Z_TYPE_P(class_name) == IS_OBJECT ) {
         if ( !get_class_doc_comment(Z_OBJCE_P(class_name)) )
             RETURN_NULL();
 
         RETURN_STR(get_class_doc_comment(Z_OBJCE_P(class_name)));
-    }
-    else if (Z_TYPE_P(class_name) == IS_STRING)
-    {
+    } else if (Z_TYPE_P(class_name) == IS_STRING) {
         zend_class_entry *ce = zend_lookup_class(Z_STR_P(class_name));
         if ( !get_class_doc_comment(ce) )
             RETURN_NULL();
         RETURN_STR(get_class_doc_comment(ce));
-    }
-    else
-    {
+    } else {
         XAN_INFO(E_ERROR, "Parameter className must be Object or String!");
     }
 
@@ -119,34 +113,26 @@ XAN_METHOD(Xan, getMethodDocComment)
     zend_string *method_name;
     zend_class_entry *class_entry;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "zS", &object_or_name, &method_name) == FAILURE)
-    {
+    if ( zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "zS", &object_or_name, &method_name ) == FAILURE){
         return;
     }
 
-    if ( !ZSTR_LEN(method_name) )
-    {
+    if ( !ZSTR_LEN(method_name) ){
         XAN_INFO(E_ERROR, "MethodName must be valid string!");
     }
 
     method_name = zend_string_tolower(method_name);
 
-    if (Z_TYPE_P(object_or_name) == IS_STRING)
-    {
+    if (Z_TYPE_P(object_or_name) == IS_STRING) {
         class_entry = zend_lookup_class(Z_STR_P(object_or_name));
-    }
-    else if (Z_TYPE_P(object_or_name) == IS_OBJECT)
-    {
+    } else if (Z_TYPE_P(object_or_name) == IS_OBJECT) {
         class_entry = Z_OBJCE_P(object_or_name);
-    }
-    else
-    {
+    } else {
         XAN_INFO(E_ERROR, "Parameter className must be Object or String!");
     }
 
     zend_function *method_value = zend_hash_str_find_ptr(&class_entry->function_table, ZSTR_VAL(method_name), ZSTR_LEN(method_name));
-    if (!method_value)
-    {
+    if (!method_value) {
         XAN_INFO(E_ERROR, "Method: %s not exists in Class %s!", ZSTR_VAL(method_name), ZSTR_VAL(class_entry->name));
     }
 
@@ -164,13 +150,11 @@ XAN_METHOD(Xan, parseDocComment)
 {
     zval zretval;
     zend_string *doc_comment;
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "S", &doc_comment) == FAILURE)
-    {
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "S", &doc_comment) == FAILURE) {
         return ;
     }
 
-    if ( !ZSTR_LEN(doc_comment) || !doc_comment )
-    {
+    if ( !ZSTR_LEN(doc_comment) || !doc_comment ) {
         XAN_INFO(E_ERROR, "$docComment must be valid.");
     }
     
@@ -187,13 +171,11 @@ XAN_METHOD(Xan, parseDocComment)
 XAN_METHOD(Xan, getParseResult)
 {
     zend_string *doc_comment;
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "S", &doc_comment) == FAILURE)
-    {
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "S", &doc_comment) == FAILURE) {
         return ;
     }
 
-    if ( !ZSTR_LEN(doc_comment) || !doc_comment )
-    {
+    if ( !ZSTR_LEN(doc_comment) || !doc_comment ) {
         XAN_INFO(E_ERROR, "$docComment must be valid.");
     }
     
@@ -212,25 +194,18 @@ XAN_METHOD(Xan, getAllMethodsDocComment)
     zend_function *each_func;
     zval *object_or_name, each_func_ret, all_rets;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &object_or_name) == FAILURE)
-    {
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &object_or_name) == FAILURE) {
         return ;
     }
 
-    if (Z_TYPE_P(object_or_name) == IS_OBJECT)
-    {
+    if (Z_TYPE_P(object_or_name) == IS_OBJECT) {
         ce = Z_OBJCE_P(object_or_name);
-    }
-    else if ( Z_TYPE_P(object_or_name) == IS_STRING )
-    {
+    } else if ( Z_TYPE_P(object_or_name) == IS_STRING ){
         ce = zend_lookup_class(Z_STR_P(object_or_name));
-        if( !ce )
-        {
+        if( !ce ) {
             XAN_INFO(E_ERROR, "Class %s not found.", Z_STRVAL_P(object_or_name));
         }
-    }
-    else
-    {
+    } else {
         XAN_INFO(E_ERROR, "Parameter $objectOrName must be Object or Class name.");
     }
 
@@ -238,8 +213,7 @@ XAN_METHOD(Xan, getAllMethodsDocComment)
 
     array_init(&all_rets);
     
-    ZEND_HASH_FOREACH_PTR(&ce->function_table, each_func)
-    {
+    ZEND_HASH_FOREACH_PTR(&ce->function_table, each_func) {
         array_init(&each_func_ret);
         get_doc_comment_result(&each_func_ret, get_function_doc_comment(&each_func->op_array));
         add_assoc_zval(&all_rets, ZSTR_VAL(each_func->common.function_name), &each_func_ret);
@@ -258,22 +232,18 @@ XAN_METHOD(Xan, getAllMethodsDocComment)
 XAN_METHOD(Xan, getAttrDocComment)
 {
     zend_string *class_name, *attr_name;
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "SS", &class_name, &attr_name) == FAILURE)
-    {
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "SS", &class_name, &attr_name) == FAILURE) {
         return ;
     }
-    if ( !ZSTR_LEN(class_name) || !ZSTR_LEN(attr_name) )
-    {
+    if ( !ZSTR_LEN(class_name) || !ZSTR_LEN(attr_name) ) {
         XAN_INFO(E_ERROR, "Parameters $className or $attrName invalid.");
     }
     zend_class_entry *ce = zend_lookup_class(class_name);
-    if ( !ce )
-    {
+    if ( !ce ) {
         XAN_INFO(E_ERROR, "Class `%s` not found.", ZSTR_VAL(class_name));
     }
     zend_property_info *p_info = zend_hash_str_find_ptr(&ce->properties_info, ZSTR_VAL(attr_name), ZSTR_LEN(attr_name));
-    if ( !p_info )
-    {
+    if ( !p_info ) {
         XAN_INFO(E_ERROR, "Property `%s` not found!", ZSTR_VAL(attr_name));
     }
     RETURN_STR(p_info->doc_comment);
@@ -286,22 +256,18 @@ XAN_METHOD(Xan, getAttrDocComment)
 XAN_METHOD(Xan, getConstDocComment)
 {
     zend_string *class_name, *const_name;
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "SS", &class_name, &const_name) == FAILURE)
-    {
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "SS", &class_name, &const_name) == FAILURE) {
         return ;
     }
-    if ( !ZSTR_LEN(class_name) || !ZSTR_LEN(const_name) )
-    {
+    if ( !ZSTR_LEN(class_name) || !ZSTR_LEN(const_name) ) {
         XAN_INFO(E_ERROR, "Parameters $className or $constName invalid.");
     }
     zend_class_entry *ce = zend_lookup_class(class_name);
-    if ( !ce )
-    {
+    if ( !ce ) {
         XAN_INFO(E_ERROR, "Class `%s` not found.", ZSTR_VAL(class_name));
     }
     zend_class_constant *class_constant = zend_hash_str_find_ptr(&ce->constants_table, ZSTR_VAL(const_name), ZSTR_LEN(const_name));
-    if ( !class_constant )
-    {
+    if ( !class_constant ) {
         XAN_INFO(E_ERROR, "Const property `%s` not found!", ZSTR_VAL(const_name));
     }
     RETURN_STR(class_constant->doc_comment);
@@ -340,8 +306,7 @@ XAN_INIT(xan)
  */
 zend_string *get_class_doc_comment(zend_class_entry *ce)
 {
-    if (!ce)
-    {
+    if (!ce) {
         return NULL;
     }
     return ce->info.user.doc_comment;
@@ -353,8 +318,7 @@ zend_string *get_class_doc_comment(zend_class_entry *ce)
  */
 zend_string *get_function_doc_comment(zend_op_array *op_array)
 {
-    if ( !op_array )
-    {
+    if ( !op_array ) {
         return NULL;
     }
     return op_array->doc_comment;
@@ -371,35 +335,27 @@ static void parse_line_comment(zval *retval, char *str, int *b_e, int l_s )
     if ( str[0] == '@') if ( !(*b_e) ) *b_e = l_s;
     char anno_name[1024] = {0}, anno_attr[1024] = {0}, anno_key[1024] = {0}, anno_value[1024] = {0};
     int  index = 0, para_left = 0, para_right = 0, c_index = 0, default_value = 1, in_quote = 0;
-    for( str = str + 1; index <= strlen(str); index++)
-    {
-        if ( str[index] == '(' && para_left == 0 )
-        {
+    for ( str = str + 1; index <= strlen(str); index++) {
+        if ( str[index] == '(' && para_left == 0 ) {
             para_left = index;
             memcpy(anno_name, str, index);
         }
 
-        if ( str[index] == ' ' && !para_left )
-        {
+        if ( str[index] == ' ' && !para_left ) {
             in_quote = 1;
             break;
         }
 
-        if ( para_left && (str[index] == '"' || str[index] == '\'') )
-        {
+        if ( para_left && (str[index] == '"' || str[index] == '\'') ) {
             if ( in_quote ) in_quote = 0;
             else in_quote = 1;
         }
 
-        if ( !in_quote )
-        {
-            if ( (str[index] == ')' && (index == strlen(str) - 1)) )
-            {
+        if ( !in_quote ) {
+            if ( (str[index] == ')' && (index == strlen(str) - 1)) ) {
                 para_right = index;
                 break;
-            }
-            else if ( str[index] == ')' && (index != strlen(str) - 1))
-            {
+            } else if ( str[index] == ')' && (index != strlen(str) - 1)) {
                 in_quote = 1;
                 bzero(anno_name, sizeof(anno_name));
                 break;
@@ -407,21 +363,18 @@ static void parse_line_comment(zval *retval, char *str, int *b_e, int l_s )
         }
     }
 
-    if ( in_quote )
-    {
+    if ( in_quote ) {
         if (*anno_name != '\0') add_assoc_null(retval, anno_name);
         return ;
     }
 
-    if ( index && !para_left && !para_right)
-    {
+    if ( index && !para_left && !para_right) {
         memcpy(anno_name, str, index);
         add_assoc_null(retval, anno_name);
         return ;
     }
 
-    if ( (para_left) && !para_right)
-    {
+    if ( (para_left) && !para_right) {
         return ;
     }
 
@@ -431,13 +384,10 @@ static void parse_line_comment(zval *retval, char *str, int *b_e, int l_s )
     array_init(&tval);
     php_explode( strpprintf(0, "%s", ","), strpprintf(0, "%s", anno_attr), &temp_array, ZEND_LONG_MAX );
 
-    ZEND_HASH_FOREACH_NUM_KEY_VAL(Z_ARRVAL(temp_array), ukey, value)
-    {
+    ZEND_HASH_FOREACH_NUM_KEY_VAL(Z_ARRVAL(temp_array), ukey, value) {
         zend_string *trim_value = php_trim( Z_STR_P(value), XAN_STRL(" "), 3 );
-        for(c_index = 0; c_index < ZSTR_LEN(trim_value); c_index++)
-        {
-            if ( *(ZSTR_VAL(trim_value) + c_index) == '=' )
-            {
+        for (c_index = 0; c_index < ZSTR_LEN(trim_value); c_index++) {
+            if ( *(ZSTR_VAL(trim_value) + c_index) == '=' ) {
                 default_value = 0;
                 bzero(anno_key, sizeof(anno_key));
                 bzero(anno_value, sizeof(anno_value));
@@ -451,8 +401,7 @@ static void parse_line_comment(zval *retval, char *str, int *b_e, int l_s )
                 );
             }
         }
-        if (default_value)
-        {
+        if (default_value) {
             add_index_str(&tval, ukey,  php_trim(trim_value, XAN_STRL(" \"'"), 3));
         }
         
@@ -484,13 +433,11 @@ void parse_doc_comment(zval *object, zend_string *doc_comment)
 	int i = 0/* str pos*/, n_l = 0/*new line*/, b_s = 0/*body start*/, b_e = 0/*body end*/,
 		l_s = 0/* line start */, l_e = 0 /* line end */, t = 0, t_k = 0;
 
-	for (i = 0; i < ZSTR_LEN(doc_comment); ++i)
-	{
+	for (i = 0; i < ZSTR_LEN(doc_comment); ++i) {
 		if ( !b_s && ( str[i] == '/' || str[i] == '*' || str[i] == ' ' ) ) continue;
 
 		if ( str[i] == '\n' ) {
-			for (t = i + 1; t < strlen(str); t++, i++)
-			{
+			for (t = i + 1; t < strlen(str); t++, i++) {
 				if ( str[t] == '*' || str[t] == ' ') continue;
 				else {
 					if ( !l_s ){
@@ -562,13 +509,11 @@ void get_doc_comment_result(zval *retval, zend_string *doc_comment)
 {
     zval anno, ret, func_name, pattern, replace, subject;
 
-    if (Z_TYPE_P(retval) != IS_ARRAY)
-    {
+    if (Z_TYPE_P(retval) != IS_ARRAY) {
         return ;
     }
 
-    if ( !doc_comment || !ZSTR_LEN(doc_comment) )
-    {
+    if ( !doc_comment || !ZSTR_LEN(doc_comment) ) {
         return ;
     }
 
@@ -580,13 +525,11 @@ void get_doc_comment_result(zval *retval, zend_string *doc_comment)
 	int i = 0/* str pos*/, n_l = 0/*new line*/, b_s = 0/*body start*/, b_e = 0/*body end*/,
 		l_s = 0/* line start */, l_e = 0 /* line end */, t = 0, t_k = 0;
 
-	for (i = 0; i < ZSTR_LEN(doc_comment); ++i)
-	{
+	for (i = 0; i < ZSTR_LEN(doc_comment); ++i) {
 		if ( !b_s && ( str[i] == '/' || str[i] == '*' || str[i] == ' ' ) ) continue;
 
 		if ( str[i] == '\n' ) {
-			for (t = i + 1; t < strlen(str); t++, i++)
-			{
+			for (t = i + 1; t < strlen(str); t++, i++) {
 				if ( str[t] == '*' || str[t] == ' ') continue;
 				else {
 					if ( !l_s ){
