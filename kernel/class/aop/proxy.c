@@ -270,9 +270,7 @@ void run_method(zval function_value[], zval *retval)
     zval *fun_name, func_parameters/*In Used*/;
 
     /* Each calling chain start with run_method */
-    ZVAL_NULL( &XAN_G(call_chain) );
-
-    /*all parameters need to passed to the user function */
+    /* all parameters need to passed to the user function */
     array_init(&func_parameters);
 
     if ( !function_value || ZVAL_IS_NULL(function_value) ) return ;

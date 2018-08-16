@@ -66,6 +66,7 @@ XAN_METHOD(Response, __construct)
  */
 XAN_METHOD(Response, forward)
 {
+    int root_url = 0;
     zend_string *url, *key;
     zval *get_params = NULL, *value;
 
@@ -77,6 +78,37 @@ XAN_METHOD(Response, forward)
         return ;
     }
 
+    if ( ZSTR_VAL(url)[0] == '/' ) {
+        root_url = 1;
+    }
+
+    /* Make sure the url are right */
+    array_init(return_value);
+    key = php_trim( url, XAN_STRL("/"), 3 );
+    php_explode( strpprintf(0, "%s", "/"), key, return_value, ZEND_LONG_MAX );
+    if ( Z_H_N_E(Z_ARRVAL_P(return_value)) == 1 ) {
+        
+        Z_STRVAL(XAN_G(default_controller))[0] = tolower( Z_STRVAL(XAN_G(default_controller))[0] );
+        
+        /* Only one element & in root mode */
+        if ( root_url ) {
+            url = strpprintf( 0, "%s/%s/%s", ZSTR_VAL(url), Z_STRVAL(XAN_G(default_controller)), Z_STRVAL(XAN_G(default_action)) );
+        } else {
+            url = strpprintf( 0, "%s/%s/%s", Z_STRVAL(XAN_G(default_module)), Z_STRVAL(XAN_G(default_controller)), ZSTR_VAL(url) );
+        }
+
+        Z_STRVAL(XAN_G(default_controller))[0] = toupper( Z_STRVAL(XAN_G(default_controller))[0] );
+
+    } else if ( Z_H_N_E(Z_ARRVAL_P(return_value)) == 2 ) {
+        /* Only two element & in root mode */
+        if ( root_url ) {
+            url = strpprintf( 0, "%s/%s", ZSTR_VAL(url), Z_STRVAL(XAN_G(default_action)) );
+        } else {
+            url = strpprintf( 0, "%s/%s", Z_STRVAL(XAN_G(default_module)), ZSTR_VAL(url) );
+        }
+    }
+
+    /* After parsing the url into the right form */
     if ( get_params && zend_hash_num_elements( Z_ARRVAL_P(get_params)) ) {
         
         ZVAL_STRING(return_value, "");
@@ -104,6 +136,9 @@ XAN_METHOD(Response, forward)
 
     /* Release the url memory */
     zend_string_release(url);
+
+    /* each forward return true */
+    ZVAL_TRUE(return_value);
 }/*}}}*/
 
 /**
@@ -112,6 +147,7 @@ XAN_METHOD(Response, forward)
  */
 XAN_METHOD(Response, redirect)
 {
+    int root_url = 0;
     zend_string *url, *key;
     zval *get_params = NULL, *value;
 
@@ -121,6 +157,32 @@ XAN_METHOD(Response, redirect)
 
     if ( !ZSTR_LEN(url) ) {
         return ;
+    }
+
+    /* Make sure the url are right */
+    array_init(return_value);
+    key = php_trim( url, XAN_STRL("/"), 3 );
+    php_explode( strpprintf(0, "%s", "/"), key, return_value, ZEND_LONG_MAX );
+    if ( Z_H_N_E(Z_ARRVAL_P(return_value)) == 1 ) {
+        
+        Z_STRVAL(XAN_G(default_controller))[0] = tolower( Z_STRVAL(XAN_G(default_controller))[0] );
+        
+        /* Only one element & in root mode */
+        if ( root_url ) {
+            url = strpprintf( 0, "%s/%s/%s", ZSTR_VAL(url), Z_STRVAL(XAN_G(default_controller)), Z_STRVAL(XAN_G(default_action)) );
+        } else {
+            url = strpprintf( 0, "%s/%s/%s", Z_STRVAL(XAN_G(default_module)), Z_STRVAL(XAN_G(default_controller)), ZSTR_VAL(url) );
+        }
+
+        Z_STRVAL(XAN_G(default_controller))[0] = toupper( Z_STRVAL(XAN_G(default_controller))[0] );
+
+    } else if ( Z_H_N_E(Z_ARRVAL_P(return_value)) == 2 ) {
+        /* Only two element & in root mode */
+        if ( root_url ) {
+            url = strpprintf( 0, "%s/%s", ZSTR_VAL(url), Z_STRVAL(XAN_G(default_action)) );
+        } else {
+            url = strpprintf( 0, "%s/%s", Z_STRVAL(XAN_G(default_module)), ZSTR_VAL(url) );
+        }
     }
 
     if ( get_params && zend_hash_num_elements( Z_ARRVAL_P(get_params)) ) {
