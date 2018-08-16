@@ -25,7 +25,7 @@ class Response
      * @param string      $url            The url info which you want to dispatch to or forward to
      * @param array       $getParams      The $_GET data which you want to send to the url
      */
-    function forward($url, $getParams = []) { }
+    function forward($url, $getParams = []) { return true; }
 
     /**
      * To redirect the url, note that this will change the url info and the global data such as
