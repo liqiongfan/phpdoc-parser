@@ -24,6 +24,7 @@
 
 #include "php.h"
 #include "php_ini.h"
+#include "php_main.h"
 #include "ext/standard/info.h"
 #include "php_xannotation.h"
 #include "kernel/loader/loader.h"
@@ -255,26 +256,24 @@ void require_php_file(char *file_name)
     file_handle.filename      = file_name;
     file_handle.handle.fp     = NULL;
     zend_op_array *op_array   = NULL;
-    
-    zend_try {
-        op_array = zend_compile_file(&file_handle, ZEND_REQUIRE);
-    } zend_end_try();
+    zend_execute_data *orig_execute_data = NULL;
+    zend_execute_data *require_call;
+    orig_execute_data = EG(current_execute_data);
+    op_array = zend_compile_file(&file_handle, ZEND_REQUIRE);
+    EG(current_execute_data) = orig_execute_data;
+    if ( op_array ) {
+        require_call = zend_vm_stack_push_call_frame( ZEND_CALL_NESTED_CODE | ZEND_CALL_HAS_SYMBOL_TABLE,
+            (zend_function *)op_array, 0, NULL, NULL
+        );
+        zend_init_execute_data( require_call, op_array, &result );
+        ZEND_ADD_CALL_FLAG(require_call, ZEND_CALL_TOP);
+        zend_execute_ex(require_call);
+        if (EG(exception)) zend_exception_error(EG(exception), E_ERROR);
+        zend_vm_stack_free_call_frame(require_call);
 
-    if (EG(exception)) zend_exception_error(EG(exception), E_ERROR);
-
-    zend_execute_data *require_call = zend_vm_stack_push_call_frame( ZEND_CALL_NESTED_CODE | ZEND_CALL_HAS_SYMBOL_TABLE,
-          (zend_function *)op_array, 0, NULL, NULL
-    );
-
-    zend_init_execute_data( require_call, op_array, &result );
-    ZEND_ADD_CALL_FLAG(require_call, ZEND_CALL_TOP);
-    zend_execute_ex(require_call);
-    zend_vm_stack_free_call_frame(require_call);
-    destroy_op_array(op_array);
-    efree_size(op_array, sizeof(zend_op_array));
-
-    if (EG(exception)) zend_exception_error(EG(exception), E_ERROR);
-    
+        destroy_op_array(op_array);
+        efree_size(op_array, sizeof(zend_op_array));
+    }
     zend_destroy_file_handle(&file_handle);
 }/*}}}*/
 
@@ -284,6 +283,7 @@ void require_php_file(char *file_name)
  */
 int xan_require_file(const char * file_name, zval *variables, zval *called_object_ptr, zval *return_view)
 {
+    zval result;
     zend_file_handle file_handle;
 
     file_handle.free_filename = 0;
@@ -291,66 +291,70 @@ int xan_require_file(const char * file_name, zval *variables, zval *called_objec
     file_handle.opened_path   = NULL;
     file_handle.filename      = file_name;
     file_handle.handle.fp     = NULL;
-    zend_op_array *op_array = NULL;
-    zend_try {
-        op_array = zend_compile_file(&file_handle, ZEND_INCLUDE);
-    }zend_end_try();
-    if (EG(exception)) {
-        zend_exception_error(EG(exception), E_ERROR);
-    }
-    zend_execute_data *require_call = zend_vm_stack_push_call_frame(
-          ZEND_CALL_NESTED_CODE | ZEND_CALL_HAS_SYMBOL_TABLE,
-          (zend_function *)op_array, 
-          0, 
-          ( called_object_ptr != NULL ) ? Z_OBJCE_P(called_object_ptr) : NULL, 
-          ( called_object_ptr != NULL ) ? Z_OBJ_P(called_object_ptr) : NULL
-    );
-    /* To extract the variables into the view file */
-    if ( (variables == NULL) || !zend_hash_num_elements(Z_ARRVAL_P(variables)) ) {
-        zval empty_variables;
-        array_init(&empty_variables);
-        variables = &empty_variables;
-    }
-    if ( Z_TYPE_P(variables) == IS_ARRAY ){
-        zend_array *symbol_tables = emalloc(sizeof(zend_array));
-        zend_hash_init(symbol_tables, 8, NULL, ZVAL_PTR_DTOR, 0);
-        zend_hash_real_init(symbol_tables, 0);
-        zend_string *var_name;
-        zval *var_value;
-        ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(variables), var_name, var_value){
-            if (EXPECTED(zend_hash_add_new(symbol_tables, var_name, var_value))) {
-                Z_TRY_ADDREF_P(var_value);
+    zend_op_array *op_array   = NULL;
+    zend_execute_data *orig_execute_data = NULL;
+
+    orig_execute_data = EG(current_execute_data);
+    op_array = zend_compile_file(&file_handle, ZEND_INCLUDE);
+    EG(current_execute_data) = orig_execute_data;
+
+    if ( op_array ) {
+        zend_execute_data *require_call = zend_vm_stack_push_call_frame(
+            ZEND_CALL_NESTED_CODE | ZEND_CALL_HAS_SYMBOL_TABLE,
+            (zend_function *)op_array, 
+            0, 
+            ( called_object_ptr != NULL ) ? Z_OBJCE_P(called_object_ptr) : NULL, 
+            ( called_object_ptr != NULL ) ? Z_OBJ_P(called_object_ptr) : NULL
+        );
+        /* To extract the variables into the view file */
+        if ( (variables == NULL) || !zend_hash_num_elements(Z_ARRVAL_P(variables)) ) {
+            zval empty_variables;
+            array_init(&empty_variables);
+            variables = &empty_variables;
+        }
+        if ( Z_TYPE_P(variables) == IS_ARRAY ){
+            zend_array *symbol_tables = emalloc(sizeof(zend_array));
+            zend_hash_init(symbol_tables, 8, NULL, ZVAL_PTR_DTOR, 0);
+            zend_hash_real_init(symbol_tables, 0);
+            zend_string *var_name;
+            zval *var_value;
+            ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(variables), var_name, var_value){
+                if (EXPECTED(zend_hash_add_new(symbol_tables, var_name, var_value))) {
+                    Z_TRY_ADDREF_P(var_value);
+                }
+            } ZEND_HASH_FOREACH_END();
+            require_call->symbol_table = symbol_tables;
+        }
+        if (return_view &&  php_output_start_user( NULL, 0, PHP_OUTPUT_HANDLER_STDFLAGS ) == FAILURE) {
+            XAN_INFO( E_WARNING, "Failed to call ob_start().");
+            return 0;
+        }
+        
+        zend_init_execute_data( require_call, op_array, &result );
+        ZEND_ADD_CALL_FLAG(require_call, ZEND_CALL_TOP);
+        zend_execute_ex(require_call);
+        zend_vm_stack_free_call_frame(require_call);
+        destroy_op_array(op_array);
+        efree_size(op_array, sizeof(zend_op_array));
+        if (EG(exception)) {
+            zend_exception_error(EG(exception), E_ERROR);
+            return 0;
+        }
+
+        if ( return_view ) { /* Store the data into the return_view zval struct and discard the data in the output */
+            if (php_output_get_contents(return_view) == FAILURE) {
+                php_output_end();
+                XAN_INFO(E_WARNING, "Can't fetch the ob_data.");
+                return 0;
             }
-        } ZEND_HASH_FOREACH_END();
-        require_call->symbol_table = symbol_tables;
-    }
-    if (return_view &&  php_output_start_user( NULL, 0, PHP_OUTPUT_HANDLER_STDFLAGS ) == FAILURE) {
-        XAN_INFO( E_WARNING, "Failed to call ob_start().");
-        return 0;
-    }
-    zval result;
-    zend_init_execute_data( require_call, op_array, &result );
-    ZEND_ADD_CALL_FLAG(require_call, ZEND_CALL_TOP);
-    zend_execute_ex(require_call);
-    zend_vm_stack_free_call_frame(require_call);
-    destroy_op_array(op_array);
-    efree_size(op_array, sizeof(zend_op_array));
-    if (EG(exception)) {
-        zend_exception_error(EG(exception), E_ERROR);
-        return 0;
+            if (php_output_discard() != SUCCESS ) {
+                return 0;
+            }
+        }
+        return 1;
     }
     zend_destroy_file_handle(&file_handle);
-    if (return_view) { /* Store the data into the return_view zval struct and discard the data in the output */
-        if (php_output_get_contents(return_view) == FAILURE) {
-            php_output_end();
-            XAN_INFO(E_WARNING, "Can't fetch the ob_data.");
-            return 0;
-        }
-        if (php_output_discard() != SUCCESS ) {
-            return 0;
-        }
-    }
-    return 1;
+    return 0;
 }/*}}}*/
 
 /**
@@ -446,7 +450,7 @@ void auto_load_classfile(zend_string *class_name, zval *aliases)
     memcpy(class_alias, ZSTR_VAL(class_name), class_alias_len);
 
     if (!zend_hash_num_elements(Z_ARRVAL_P(aliases))) {
-        XAN_INFO(E_ERROR, "Please setMap the aliasName before autoLoad()!");
+        XAN_INFO(E_ERROR, "Please setMap the aliasName before start()!");
     }
 
     ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(aliases), zkey, zvalue) {
@@ -454,7 +458,11 @@ void auto_load_classfile(zend_string *class_name, zval *aliases)
             zend_string *real_file_path  = strpprintf(0, "%s/%s.php", Z_STRVAL_P(zvalue), slash_pos + 1);
             reverse_zend_string_slash(real_file_path);
             is_file(ZSTR_VAL(real_file_path));
-            require_php_file(ZSTR_VAL(real_file_path));
+            zend_try {
+                require_php_file(ZSTR_VAL(real_file_path));
+            } zend_catch {
+                php_request_shutdown(NULL);
+            } zend_end_try();
             init_class_with_annotations(class_name, aliases);
             return ;
         }
@@ -482,6 +490,7 @@ void only_auto_load_file(zend_string *class_name, zval *aliases)
         reverse_zend_string_slash(real_file_path);
         is_file(ZSTR_VAL(real_file_path));
         require_php_file(ZSTR_VAL(real_file_path));
+        if (EG(exception)) zend_exception_error(EG(exception), E_ERROR);
         return ;
     } else {
         class_alias_len = slash_pos - ZSTR_VAL(class_name);
@@ -498,7 +507,11 @@ void only_auto_load_file(zend_string *class_name, zval *aliases)
             zend_string *real_file_path  = strpprintf(0, "%s/%s.php", Z_STRVAL_P(zvalue), slash_pos + 1);
             reverse_zend_string_slash(real_file_path);
             is_file(ZSTR_VAL(real_file_path));
-            require_php_file(ZSTR_VAL(real_file_path));
+            zend_try {
+                require_php_file(ZSTR_VAL(real_file_path));
+            } zend_catch {
+                php_request_shutdown(NULL);
+            } zend_end_try();
             return ;
         }
     } ZEND_HASH_FOREACH_END();
@@ -521,6 +534,7 @@ void recursive_call_method_without_obj(zend_class_entry *ce, zend_string *name)
         recursive_call_method_without_obj(ce->parent, name);
     
     zend_execute( (zend_op_array *)func, &retval);
+    if (EG(exception)) zend_exception_error(EG(exception), E_ERROR);
 
     zval_ptr_dtor(&retval);
 }/*}}}*/

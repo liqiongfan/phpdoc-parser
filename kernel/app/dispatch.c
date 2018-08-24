@@ -32,6 +32,7 @@
 #include "kernel/class/aop/proxy.h"
 #include "ext/standard/php_string.h"
 #include "Zend/zend_interfaces.h"
+#include "Zend/zend_exceptions.h"
 
 /**
  * {{{
@@ -46,7 +47,8 @@ void xan_dispatch_url(zend_string *url)
     zend_string *module_path, *controller_path, *controller_class_name, *action_name;
 
     /* If passing the url to parsing the url to obtain the module & controller & action */
-    if ( url ) {
+    if ( url && ZSTR_LEN(url) ) {
+
         int i = 0, j;
         zval *key, *value;
         array_init(&temp_url_array);
@@ -118,8 +120,7 @@ void xan_dispatch_url(zend_string *url)
     /* 1. to judge the module was allowed or not to access, if not, dispaly the error info */
     ZEND_HASH_FOREACH_VAL(Z_ARRVAL(XAN_G(allow_modules)), module_name) {
         if ( strncasecmp(Z_STRVAL(XAN_G(default_module)), Z_STRVAL_P(module_name), Z_STRLEN_P(module_name)) == 0 ) {
-            status = 1;
-            break;
+            status = 1; break;
         }
     } ZEND_HASH_FOREACH_END();
     if ( !status )
@@ -147,7 +148,6 @@ class_entry:
     if ( !controller_class ) {
         /*Require the Controller file*/
         require_php_file(ZSTR_VAL(controller_path));
-
         /* Do the Annotation parsing */
         init_class_with_annotations(controller_class_name, &XAN_G(aliases));
 
@@ -157,6 +157,8 @@ class_entry:
 
     /* Calling the init function */
     recursive_call_method_without_obj(controller_class, strpprintf(0, "%s", "init"));
+
+    if (EG(exception)) zend_exception_error(EG(exception), E_ERROR);
 
     /* get_object_from_di(&XAN_G(class_di), controller_class_name, &controller_obj, controller_class); */
     action_name = strpprintf(0, "%sAction", Z_STRVAL(XAN_G(default_action)));
@@ -181,11 +183,12 @@ class_entry:
     }
 
     /* If using the url_suffix, remember to release the url memory from the zend_string_init function call */
-    if (XAN_G(must_url_suffix))
+    if ( XAN_G(must_url_suffix) && url ) {
+        
         zend_string_release(url);
-
-    /* After finishing job destroy the array */
-    zend_array_destroy(Z_ARRVAL(temp_url_array));
+        /* After finishing job destroy the array */
+        zend_array_destroy(Z_ARRVAL(temp_url_array));
+    }
 }/*}}}*/
 
 /*

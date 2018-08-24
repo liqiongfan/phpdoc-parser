@@ -35,7 +35,7 @@
 zval *xan_get_get_vars(const char *get_key)
 {
     zval *get_variables = &PG(http_globals)[TRACK_VARS_GET];
-    if (!get_key) {
+    if ( !get_key ) {
         return get_variables;
     } else {
         zend_string *xget_key = zend_string_init(get_key, strlen(get_key), 0);

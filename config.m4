@@ -66,8 +66,11 @@ if test "$PHP_XANNOTATION" != "no"; then
     kernel/loader/loader.c        \
     kernel/app/app.c              \
     kernel/app/net.c              \
+    kernel/db/adapter.c           \
+    kernel/db/model.c             \
     kernel/app/view.c             \
     kernel/app/request.c          \
+    kernel/app/response.c         \
     kernel/app/dispatch.c         \
     kernel/class/config_class.c   \
     kernel/class/aop/proxy.c      \

@@ -29,6 +29,7 @@
 #include "php_xannotation.h"
 #include "ext/standard/info.h"
 #include "kernel/app/dispatch.h"
+#include "kernel/loader/loader.h"
 #include "ext/standard/php_string.h"
 
 
@@ -50,6 +51,25 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_INFO_EX(ARGINFO(xan_app_set), 0, 0, 2)
     ZEND_ARG_INFO(0, objName)
     ZEND_ARG_INFO(0, object)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(ARGINFO(xan_app_get_di), 0, 0, 1)
+    ZEND_ARG_INFO(0, name)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(ARGINFO(xan_app_bootstrap), 0, 0, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(ARGINFO(xan_app_get_module), 0, 0, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(ARGINFO(xan_app_get_controller), 0, 0, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(ARGINFO(xan_app_get_action), 0, 0, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(ARGINFO(xan_app_get_url_suffix), 0, 0, 0)
 ZEND_END_ARG_INFO()
 
 /*}}}*/
@@ -170,10 +190,18 @@ XAN_METHOD(App, __construct)
         php_explode(strpprintf(0, "%s", ","), Z_STR_P(allow_modules), &XAN_G(allow_modules), ZEND_LONG_MAX);
     }
 
+    /* Parsing the bootClassPath */
+    zval *bootstrap = STRING_FIND_P(options, "bootClassPath");
+    if ( bootstrap && !ZVAL_IS_NULL(bootstrap) && (Z_TYPE_P(bootstrap) == IS_STRING) ) {
+        if (Z_STRVAL_P(bootstrap)[0] != '\0') {
+            ZVAL_STR(&XAN_G(bootstrap), zend_string_tolower(Z_STR_P(bootstrap)));
+        }
+    }
+
+    /* After parsing */
     ZVAL_COPY(&XAN_G(app_di), getThis());
     zend_update_static_property(Z_OBJCE_P(getThis()), XAN_STRL("app"), getThis());
 }/*}}}*/
-
 
 /**
  * {{{
@@ -212,7 +240,6 @@ XAN_METHOD(App, run)
     /* TODO... */
 }/*}}}*/
 
-
 /**
  * {{{
  * proto App::__get($name)
@@ -226,6 +253,41 @@ XAN_METHOD(App, __get)
     zval *obj = zend_hash_str_find(Z_ARRVAL(XAN_G(class_di)), ZSTR_VAL(obj_name), ZSTR_LEN(obj_name));
     if ( !obj || ZVAL_IS_NULL(obj) ) RETURN_NULL();
     RETURN_ZVAL(obj, 1, NULL);
+}/*}}}*/
+
+/**
+ * {{{
+ * proto App::get($name)
+ */
+XAN_METHOD(App, get)
+{
+    zend_string *name;
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "S", &name) == FAILURE) {
+        return ;
+    }
+    zval *obj = zend_hash_str_find(Z_ARRVAL(XAN_G(class_di)), ZSTR_VAL(name), ZSTR_LEN(name));
+    if ( !obj || ZVAL_IS_NULL(obj) ) RETURN_NULL();
+    RETURN_ZVAL(obj, 1, NULL);
+}/*}}}*/
+
+/**
+ * {{{
+ * proto App::set($name, $mixed)
+ */
+XAN_METHOD(App, set)
+{
+    zval *value;
+    zend_string *name;
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "Sz", &name, &value) == FAILURE) {
+        return ;
+    }
+
+    if ( !ZSTR_VAL(name) ) {
+        RETURN_NULL();
+    }
+
+    Z_TRY_ADDREF_P(value);
+    add_assoc_zval(&XAN_G(class_di), ZSTR_VAL(name), value);
 }/*}}}*/
 
 /**
@@ -243,7 +305,99 @@ XAN_METHOD(App, __set)
     if (ZSTR_VAL(obj_name)[0] == '\0') {
         return ;
     }
+
+    Z_TRY_ADDREF_P(object);
     add_assoc_zval(&XAN_G(class_di), ZSTR_VAL(obj_name), object);
+}/*}}}*/
+
+/**
+ * {{{ 
+ * proto App::getModule()
+ */
+XAN_METHOD(App, getModule)
+{
+    if (zend_parse_parameters_none() == FAILURE) {
+        return ;
+    }
+
+    ZVAL_COPY(return_value, &XAN_G(default_module));
+}/*}}}*/
+
+/**
+ * {{{ 
+ * proto App::getController()
+ */
+XAN_METHOD(App, getController)
+{
+    if (zend_parse_parameters_none() == FAILURE) {
+        return ;
+    }
+
+    ZVAL_COPY(return_value, &XAN_G(default_controller));
+}/*}}}*/
+
+/**
+ * {{{ 
+ * proto App::getAction()
+ */
+XAN_METHOD(App, getAction)
+{
+    if (zend_parse_parameters_none() == FAILURE) {
+        return ;
+    }
+
+    ZVAL_COPY(return_value, &XAN_G(default_action));
+}/*}}}*/
+
+/**
+ * {{{ 
+ * proto App::getUrlSuffix()
+ */
+XAN_METHOD(App, getUrlSuffix)
+{
+    if (zend_parse_parameters_none() == FAILURE) {
+        return ;
+    }
+
+    ZVAL_COPY(return_value, &XAN_G(url_suffix));
+}/*}}}*/
+
+/**
+ * {{{ 
+ * proto App::bootstrap()
+ */
+XAN_METHOD(App, bootstrap)
+{
+    int retry_time = 0;
+    zend_class_entry *ce;
+    zend_function *each_func;
+
+    if ( ZVAL_IS_NULL(&XAN_G(bootstrap)) ) {
+        RETURN_ZVAL(getThis(), 1, NULL);
+    }
+
+    /* Require the php file and find the bootstrap class run the methods */
+    is_file(Z_STRVAL(XAN_G(bootstrap)));
+
+again:
+    ce = zend_hash_str_find_ptr( CG(class_table), ZEND_STRL("bootstrap") );
+
+    if ( !ce ) {
+        if (retry_time >= 3) RETURN_ZVAL(getThis(), 1, NULL);
+        retry_time++;
+        require_php_file( Z_STRVAL(XAN_G(bootstrap)) );
+        goto again;
+    }
+
+    ZEND_HASH_FOREACH_PTR(&ce->function_table, each_func) {
+
+        if ( strncasecmp( ZSTR_VAL(each_func->common.function_name), XAN_STRL("__init") ) == 0 ) {
+            zend_execute((zend_op_array*)each_func, return_value);
+        }
+
+    } ZEND_HASH_FOREACH_END();
+
+    RETURN_ZVAL(getThis(), 1, NULL);
 }/*}}}*/
 
 /**
@@ -255,6 +409,13 @@ XAN_FUNCTIONS(app)
     XAN_ME(App, run, arginfo_xan_app_run, ZEND_ACC_PUBLIC)
     XAN_ME(App, __set, arginfo_xan_app_set, ZEND_ACC_PUBLIC)
     XAN_ME(App, __get, arginfo_xan_app_get, ZEND_ACC_PUBLIC)
+    XAN_ME(App, get, arginfo_xan_app_get_di, ZEND_ACC_PUBLIC)
+    XAN_ME(App, set, arginfo_xan_app_set, ZEND_ACC_PUBLIC)
+    XAN_ME(App, bootstrap, arginfo_xan_app_bootstrap, ZEND_ACC_PUBLIC)
+    XAN_ME(App, getModule, arginfo_xan_app_get_module, ZEND_ACC_PUBLIC)
+    XAN_ME(App, getController, arginfo_xan_app_get_controller, ZEND_ACC_PUBLIC)
+    XAN_ME(App, getAction, arginfo_xan_app_get_action, ZEND_ACC_PUBLIC)
+    XAN_ME(App, getUrlSuffix, arginfo_xan_app_get_url_suffix, ZEND_ACC_PUBLIC)
 XAN_FUNCTIONS_END()
 /*}}}*/
 

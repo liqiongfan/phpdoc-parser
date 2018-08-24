@@ -32,13 +32,8 @@
 #include "Zend/zend_smart_str.h"
 #include "kernel/class/aop/proxy.h"
 #include "ext/standard/php_string.h"
+#include "Zend/zend_exceptions.h"
 #include "main/SAPI.h"
-
-void t_info(int type, char *info, ...)
-{
-    zend_string *tinfo = strpprintf(type, info);
-    php_write(ZSTR_VAL(tinfo), ZSTR_LEN(tinfo));
-}
 
 /**
  * {{{
@@ -97,6 +92,10 @@ XAN_METHOD(AopProxy, instance)
     zend_update_property_str(XAN_ENTRY_OBJ(return_value), XAN_STRL(CLASS_CE), class_name);
 }/*}}}*/
 
+/**
+ * {{{
+ * AopProxy::__call($functionName, $parameters = [])
+ */
 XAN_METHOD(AopProxy, __call)
 {
     zval *parameters;
@@ -110,7 +109,7 @@ XAN_METHOD(AopProxy, __call)
         array_init(&XAN_G(call_chain));
 
     call_annotation_function(getThis(), NULL, function_name, parameters, return_value);
-}
+}/*}}}*/
 
 /**
  * {{{
@@ -223,7 +222,11 @@ void call_method_with_object_array(zval *object, char *method_name, uint32_t par
     if (XAN_CHECK_METHOD(object, method_name) != NULL) {
         zval function_name;
         ZVAL_STRING(&function_name, method_name);
-        call_user_function( NULL, object, &function_name, ret_val, param_counts, params );
+        zend_try {
+            call_user_function( NULL, object, &function_name, ret_val, param_counts, params );
+        } zend_catch {
+            if (EG(exception)) zend_exception_error(EG(exception), E_ERROR);
+        } zend_end_try();
         zval_ptr_dtor(&function_name);
     }
 }/*}}}*/

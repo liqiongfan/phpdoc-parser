@@ -42,6 +42,8 @@ XAN_INIT(xan);
 XAN_INIT(app);
 XAN_INIT(view);
 XAN_INIT(loader);
+XAN_INIT(adapter);
+XAN_INIT(model);
 XAN_INIT(request);
 XAN_INIT(response);
 XAN_INIT(aop_proxy);
@@ -108,6 +110,8 @@ PHP_MINIT_FUNCTION(xannotation)
 	view_init();
 	loader_init();
 	request_init();
+	adapter_init();
+	model_init();
 	response_init();
 	aop_proxy_init();
 	annotation_init();
@@ -144,6 +148,8 @@ PHP_RINIT_FUNCTION(xannotation)
     array_init(&XAN_G(class_di));
 	ZVAL_NULL(&XAN_G(call_chain));
 	ZVAL_NULL(&XAN_G(url_get_str));
+	ZVAL_NULL(&XAN_G(bootstrap));
+	ZVAL_NULL(&XAN_G(pdo_object));
 
 	/* Some default setting for the Xan\App */
 	/* GET pattern */
@@ -184,7 +190,9 @@ PHP_RSHUTDOWN_FUNCTION(xannotation)
 PHP_MINFO_FUNCTION(xannotation)
 {
 	php_info_print_table_start();
-	php_info_print_table_header(2, "xannotation support", "enabled");
+	php_info_print_table_header( 2, "Xan support", "enabled" );
+	php_info_print_table_header( 2, "Author info", "Josin <a style=\"background-color: gray;opacity:.6;\" href=\"http://www.supjos.cn\">Xannotation</a>" );
+	php_info_print_table_header( 2, "Xan framework", "v" PHP_XANNOTATION_VERSION );
 	php_info_print_table_end();
 
 	/* Remove comments if you have entries in php.ini

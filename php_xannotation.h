@@ -60,6 +60,8 @@ ZEND_BEGIN_MODULE_GLOBALS(xannotation)
     zend_bool auto_render;    /* 0 disable auto_render 1 auto_render */
     zval application_dir;     /* [zend_string]the application directory */
     zval default_namespace;   /* [zend_string]the default namespace */
+    zval bootstrap;           /* [zval] the bootstrap class path */
+    zval pdo_object;          /* [zval] the PDO object */
 ZEND_END_MODULE_GLOBALS(xannotation)
 
 /* Always refer to the globals in your function as XANNOTATION_G(variable).
