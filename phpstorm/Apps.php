@@ -14,7 +14,7 @@ namespace Xan;
  * @author Josin<774542602@qq.com>
  * @package Xan
  */
-class Apps
+abstract class Apps
 {
     /**
      * @var \Xan\Apps
