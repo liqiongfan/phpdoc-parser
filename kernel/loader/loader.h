@@ -32,7 +32,7 @@ void auto_load_classfile(zend_string *file, zval *aliases);
 void only_auto_load_file(zend_string *file, zval *aliases);
 void init_class_with_annotations(zend_string *class_name, zval *aliases);
 void recursive_call_method_without_obj(zend_class_entry *ce, zend_string *name);
-
+void recursive_call_method(zval *object, char *name, zval *retval);
 extern zend_class_entry *loader_ce;
 
 #endif /*XAN_LOADER_H*/

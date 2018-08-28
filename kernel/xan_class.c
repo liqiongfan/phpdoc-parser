@@ -332,7 +332,11 @@ static void parse_line_comment(zval *retval, char *str, int *b_e, int l_s )
 {
     zend_long ukey;
     zval temp_array, *value, tval;
-    if ( str[0] == '@') if ( !(*b_e) ) *b_e = l_s;
+    if ( str[0] == '@') {
+        if ( !(*b_e) ) *b_e = l_s;
+    } else { 
+        return ; 
+    }
     char anno_name[1024] = {0}, anno_attr[1024] = {0}, anno_key[1024] = {0}, anno_value[1024] = {0};
     int  index = 0, para_left = 0, para_right = 0, c_index = 0, default_value = 1, in_quote = 0;
     for ( str = str + 1; index <= strlen(str); index++) {

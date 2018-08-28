@@ -35,6 +35,7 @@ zend_class_entry *xan_app_ce;
 zend_class_entry *xan_view_ce;
 zend_class_entry *loader_ce;
 zend_class_entry *aspect_ce;
+zend_class_entry *xan_session_ce;
 zend_class_entry *xan_model_ce;
 zend_class_entry *annotation_ce;
 zend_class_entry *class_attr_ce;

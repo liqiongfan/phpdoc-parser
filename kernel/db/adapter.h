@@ -51,6 +51,7 @@ void xan_pdo_execute(zval *pdostatement_obj, zval *bind_data, zval *retval);
 /* Exec the SQL */
 void xan_pdo_exec(zval *pdo_object, char *sql, zval *retval);
 
+/* Get the SQL prepare error */
 void xan_pdostate_error_info(zval *pdostatement_obj, zval *retval);
 void xan_pdo_error_info(zval *pdo_object, zval *retval);
 

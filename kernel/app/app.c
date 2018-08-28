@@ -96,6 +96,9 @@ XAN_METHOD(App, __construct)
         return ;
     }
 
+    ZVAL_COPY(&XAN_G(app_di), getThis());
+    zend_update_static_property(Z_OBJCE_P(getThis()), XAN_STRL("app"), getThis());
+
     if ( !options || ( options && (Z_TYPE_P(options) != IS_ARRAY) ) ||
        ( options && (Z_TYPE_P(options) == IS_ARRAY) && !zend_hash_num_elements(Z_ARRVAL_P(options)) ) ) {
         return ;
@@ -198,9 +201,6 @@ XAN_METHOD(App, __construct)
         }
     }
 
-    /* After parsing */
-    ZVAL_COPY(&XAN_G(app_di), getThis());
-    zend_update_static_property(Z_OBJCE_P(getThis()), XAN_STRL("app"), getThis());
 }/*}}}*/
 
 /**
@@ -405,17 +405,17 @@ again:
  * proto All function for Xan\App class
  */
 XAN_FUNCTIONS(app)
-    XAN_ME(App, __construct, arginfo_xan_app_construct, ZEND_ACC_PUBLIC)
-    XAN_ME(App, run, arginfo_xan_app_run, ZEND_ACC_PUBLIC)
-    XAN_ME(App, __set, arginfo_xan_app_set, ZEND_ACC_PUBLIC)
-    XAN_ME(App, __get, arginfo_xan_app_get, ZEND_ACC_PUBLIC)
-    XAN_ME(App, get, arginfo_xan_app_get_di, ZEND_ACC_PUBLIC)
-    XAN_ME(App, set, arginfo_xan_app_set, ZEND_ACC_PUBLIC)
-    XAN_ME(App, bootstrap, arginfo_xan_app_bootstrap, ZEND_ACC_PUBLIC)
-    XAN_ME(App, getModule, arginfo_xan_app_get_module, ZEND_ACC_PUBLIC)
-    XAN_ME(App, getController, arginfo_xan_app_get_controller, ZEND_ACC_PUBLIC)
-    XAN_ME(App, getAction, arginfo_xan_app_get_action, ZEND_ACC_PUBLIC)
-    XAN_ME(App, getUrlSuffix, arginfo_xan_app_get_url_suffix, ZEND_ACC_PUBLIC)
+    XAN_ME(App, __construct, arginfo_xan_app_construct, ZEND_ACC_PUBLIC | ZEND_ACC_FINAL )
+    XAN_ME(App, run, arginfo_xan_app_run, ZEND_ACC_PUBLIC | ZEND_ACC_FINAL )
+    XAN_ME(App, __set, arginfo_xan_app_set, ZEND_ACC_PUBLIC | ZEND_ACC_FINAL )
+    XAN_ME(App, __get, arginfo_xan_app_get, ZEND_ACC_PUBLIC | ZEND_ACC_FINAL )
+    XAN_ME(App, get, arginfo_xan_app_get_di, ZEND_ACC_PUBLIC | ZEND_ACC_FINAL )
+    XAN_ME(App, set, arginfo_xan_app_set, ZEND_ACC_PUBLIC | ZEND_ACC_FINAL )
+    XAN_ME(App, bootstrap, arginfo_xan_app_bootstrap, ZEND_ACC_PUBLIC | ZEND_ACC_FINAL )
+    XAN_ME(App, getModule, arginfo_xan_app_get_module, ZEND_ACC_PUBLIC | ZEND_ACC_FINAL )
+    XAN_ME(App, getController, arginfo_xan_app_get_controller, ZEND_ACC_PUBLIC | ZEND_ACC_FINAL )
+    XAN_ME(App, getAction, arginfo_xan_app_get_action, ZEND_ACC_PUBLIC | ZEND_ACC_FINAL )
+    XAN_ME(App, getUrlSuffix, arginfo_xan_app_get_url_suffix, ZEND_ACC_PUBLIC | ZEND_ACC_FINAL )
 XAN_FUNCTIONS_END()
 /*}}}*/
 
@@ -426,8 +426,10 @@ XAN_FUNCTIONS_END()
 XAN_INIT(app)
 {
     zend_class_entry ce;
-    INIT_NS_CLASS_ENTRY(ce, "Xan", "Apps", app_functions);
+    INIT_NS_CLASS_ENTRY(ce, "Xan", "App", app_functions);
     xan_app_ce = zend_register_internal_class(&ce);
+
+    xan_app_ce->ce_flags |= ZEND_ACC_FINAL;
 
     XAN_PR_NULL(xan_app_ce, "app", ZEND_ACC_PUBLIC|ZEND_ACC_STATIC);
 }/*}}}*/

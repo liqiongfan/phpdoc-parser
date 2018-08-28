@@ -36,9 +36,8 @@ class Request
      * @param null                 $key              The key which you want to get the variable from the global variables: $_GET
      * @param null|string|callable $filters          The filters which you want to filter the value, if you set the value to string
      *                                                   it will let the kernel to call the given string-function to filter the value, `string` can
-     *                                                   be gapped by '|' char, or you can set the $filters to a callable function
+     *                                                   be gaped by '|' char, or you can set the $filters to a callable function
      * @param null|mixed           $defaultValue     The default value if the given key not exists in $_GET
-     * @return mixed
      */
     function get($key = NULL, $filters = NULL, $defaultValue = NULL ) { }
     
@@ -46,9 +45,8 @@ class Request
      * @param null                 $key              The key which you want to get the variable from the global variables: $_POST
      * @param null|string|callable $filters          The filters which you want to filter the value, if you set the value to string
      *                                                   it will let the kernel to call the given string-function to filter the value, `string` can
-     *                                                   be gapped by '|' char, or you can set the $filters to a callable function
+     *                                                   be gaped by '|' char, or you can set the $filters to a callable function
      * @param null|mixed           $defaultValue     The default value if the given key not exists in $_POST
-     * @return mixed
      */
     function getPost($key = NULL, $filters = NULL, $defaultValue = NULL ) { }
     
@@ -56,9 +54,8 @@ class Request
      * @param null                 $key              The key which you want to get the variable from the global variables: $_SERVER
      * @param null|string|callable $filters          The filters which you want to filter the value, if you set the value to string
      *                                                   it will let the kernel to call the given string-function to filter the value, `string` can
-     *                                                   be gapped by '|' char, or you can set the $filters to a callable function
+     *                                                   be gaped by '|' char, or you can set the $filters to a callable function
      * @param null|mixed           $defaultValue     The default value if the given key not exists in $_SERVER
-     * @return mixed
      */
     function getServer($key = NULL, $filters = NULL, $defaultValue = NULL ) { }
     

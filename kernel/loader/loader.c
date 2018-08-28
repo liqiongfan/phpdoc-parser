@@ -273,8 +273,11 @@ void require_php_file(char *file_name)
 
         destroy_op_array(op_array);
         efree_size(op_array, sizeof(zend_op_array));
+        zend_destroy_file_handle(&file_handle);
+    } else {
+        zend_destroy_file_handle(&file_handle);
+        XAN_INFO(E_ERROR, "%s", "Compile PHP file error!");
     }
-    zend_destroy_file_handle(&file_handle);
 }/*}}}*/
 
 /**
@@ -351,10 +354,12 @@ int xan_require_file(const char * file_name, zval *variables, zval *called_objec
                 return 0;
             }
         }
+        zend_destroy_file_handle(&file_handle);
         return 1;
+    } else {
+        XAN_INFO(E_ERROR, "View file contains PHP systax error!");
+        return 0;
     }
-    zend_destroy_file_handle(&file_handle);
-    return 0;
 }/*}}}*/
 
 /**
@@ -383,6 +388,7 @@ void init_class_with_annotations(zend_string *class_name, zval *aliases)
         return ;
     }
 
+    int times = 0;
     zend_class_entry *o_ce;
     zval class_obj, retval, class_entry;
     ZVAL_STR(&class_entry, class_name);
@@ -404,7 +410,12 @@ void init_class_with_annotations(zend_string *class_name, zval *aliases)
 again:
             o_ce = zend_hash_find_ptr( CG(class_table), strpprintf(0, "%s", ZSTR_VAL(zend_string_tolower(annotation_class_name))) );
             if ( !o_ce ) {
+                if (times >= 1) {
+                    XAN_INFO(E_ERROR, "Xan can't load the class `%s`!", ZSTR_VAL(annotation_class_name));
+                    return ;
+                }
                 only_auto_load_file(annotation_class_name, aliases);
+                times++;
                 goto again;
             }
             if ( !instanceof_function(o_ce, annotation_ce) ) {
@@ -530,14 +541,34 @@ void recursive_call_method_without_obj(zend_class_entry *ce, zend_string *name)
     if ( !func )
         return ;
     
-    if ( ce->parent )
+    if ( ce->parent ) {
         recursive_call_method_without_obj(ce->parent, name);
-    
-    zend_execute( (zend_op_array *)func, &retval);
-    if (EG(exception)) zend_exception_error(EG(exception), E_ERROR);
+    }
 
+    zend_execute( (zend_op_array *)func, &retval);
     zval_ptr_dtor(&retval);
 }/*}}}*/
+
+/* Recursive calling the mehtod  */
+void recursive_call_method(zval *object, char *name, zval *retval)
+{
+    zval parent_obj;
+
+    if ( Z_OBJCE_P(object)->parent ) {
+        object_init_ex(&parent_obj, Z_OBJCE_P(object)->parent);
+        recursive_call_method(&parent_obj, name, retval);
+        zval_ptr_dtor(&parent_obj);
+    }
+    call_method_with_object_array(object, name, 0, NULL, retval);
+    
+    if ( !ZVAL_IS_NULL(retval) ) {
+        if ( Z_TYPE_P(retval) == IS_STRING ) {
+            php_write(Z_STRVAL_P(retval), Z_STRLEN_P(retval));
+        }
+        php_request_shutdown(NULL);
+    }
+    // if ( Z_TYPE_P(retval) == IS_FALSE ) php_request_shutdown(NULL) ;
+}
 
 /*
  * Local variables:

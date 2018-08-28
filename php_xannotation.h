@@ -24,7 +24,7 @@
 extern zend_module_entry xannotation_module_entry;
 #define phpext_xannotation_ptr &xannotation_module_entry
 
-#define PHP_XANNOTATION_VERSION "0.1.0" /* Replace with version number for your extension */
+#define PHP_XANNOTATION_VERSION "0.1.9" /* Replace with version number for your extension */
 
 #ifdef PHP_WIN32
 #	define PHP_XANNOTATION_API __declspec(dllexport)
@@ -90,6 +90,7 @@ ZEND_TSRMLS_CACHE_EXTERN()
 #define XAN_METHOD                PHP_METHOD
 #define XAN_INIT(name)            void name##_init()
 #define ARGINFO(name)             arginfo_##name
+#define XAN_MALIAS                PHP_MALIAS
 
 #define XAN_FUNCTIONS(name)       \
     static const zend_function_entry name##_functions[] = {

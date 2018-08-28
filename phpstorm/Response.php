@@ -1,39 +1,34 @@
 <?php
 
-
 namespace Xan;
 
 /**
  * Class Response
  *
- * Xan\Response component for the Xan extension was used to dispatching the url
- * to instead of the function `header` by php.
+ * Response : a component for response contained in Xan framework.
  *
+ * @author Josin<774542602@qq.com>
  * @package Xan
  */
 class Response
 {
     /**
-     * Response constructor.
-     */
-    function __construct() { }
-
-    /**
-     * To forward the given url without changing the browser's url info
-     * and keep the raw input data, such as $_GET | $_POST | $_SERVER and so on
+     * Support not redirecting the url with the $_GET value
      *
-     * @param string      $url            The url info which you want to dispatch to or forward to
-     * @param array       $getParams      The $_GET data which you want to send to the url
+     * @param $url
+     * @param array $getData
      */
-    function forward($url, $getParams = []) { return true; }
-
+    function forward($url, $getData = []) {
+    
+    }
+    
     /**
-     * To redirect the url, note that this will change the url info and the global data such as
-     * $_GET | $_POST | $_SERVER will be lost after redirecting.
+     * Redirect the url & $_GET data
      *
-     * @param string      $url            The url info which you want to dispatch to or forward to
-     * @param array       $getParams      The $_GET data which you want to send to the url
+     * @param $url
+     * @param array $getDate
      */
-    function redirect($url, $getParams = []) { }
-
+    function redirect($url, $getDate = []) {
+    
+    }
 }

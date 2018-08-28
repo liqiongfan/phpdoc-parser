@@ -17,8 +17,8 @@ final class Xan
      *
      * To construct the Xan object
      */
-    function __construct()
-    {
+    function __construct() {
+    
     }
 
     /**
@@ -31,8 +31,7 @@ final class Xan
      * @param $objectOrName object|string   The class object or name which you want to obtain the doc-comments
      * @return string                       The doc-comments which you want to obtain
      */
-    function getClassDocComment($objectOrName) : string
-    {
+    function getClassDocComment($objectOrName) : string {
     }
 
     /**
@@ -43,18 +42,18 @@ final class Xan
      * @param $methodName   string            The method name which exists in the $objectOrName class
      * @return string                         The result contains the doc-comments
      */
-    function getMethodDocComment($objectOrName, $methodName) : string
-    {
+    function getMethodDocComment($objectOrName, $methodName) : string {
+    
     }
 
     /**
      * Function `parseDocComment` was designed to parsing the doc-comments
      *
      * @param $docComments string      The doc-comments which you want to parsing
-     * @return this                    The object which contains the result.
+     * @return Xan                     The object which contains the result.
      */
-    function parseDocComment($docComments) : this
-    {
+    function parseDocComment($docComments) : Xan {
+    
     }
 
     /**
@@ -63,8 +62,8 @@ final class Xan
      * @param $docComments  string   The doc-comments which you want to parsing.
      * @return array                 An array contains the parsing result.
      */
-    function getParseResult($docComments) : array
-    {
+    function getParseResult($docComments) : array {
+    
     }
 
     /**
@@ -123,10 +122,10 @@ final class Xan
      * `body`       : The body of the annotations
      *
      * @param $objectOrName object|string  The class name or object which you want to obtain the annotations
-     * @return this                        The object contains the value
+     * @return Xan                         The object contains the value
      */
-    function parseAllMethodsDocComment($objectOrName) : this
-    {
+    function parseAllMethodsDocComment($objectOrName) : Xan {
+    
     }
 
     /**
@@ -135,7 +134,9 @@ final class Xan
      * @param $attrName    The class' attribute
      * @return string      The result
      */
-    function getAttrDocComment($className, $attrName): string {}
+    function getAttrDocComment($className, $attrName): string {
+    
+    }
 
     /**
      * To obtain the const attr. doc-comment
@@ -144,5 +145,7 @@ final class Xan
      * @param $constName   The const name which you get from the class
      * @return string      The result string
      */
-    function getConstDocComment($className, $constName): string {}
+    function getConstDocComment($className, $constName): string {
+    
+    }
 }

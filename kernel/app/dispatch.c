@@ -150,17 +150,15 @@ class_entry:
         require_php_file(ZSTR_VAL(controller_path));
         /* Do the Annotation parsing */
         init_class_with_annotations(controller_class_name, &XAN_G(aliases));
-
         /* If required the php file */
         goto class_entry;
     }
 
     /* Calling the init function */
-    recursive_call_method_without_obj(controller_class, strpprintf(0, "%s", "init"));
+    get_object_from_di(&XAN_G(class_di), controller_class_name, &controller_obj, controller_class);
+    recursive_call_method(&controller_obj, "init", &retval);
 
-    if (EG(exception)) zend_exception_error(EG(exception), E_ERROR);
-
-    /* get_object_from_di(&XAN_G(class_di), controller_class_name, &controller_obj, controller_class); */
+    get_object_from_di(&XAN_G(class_di), controller_class_name, &controller_obj, controller_class);
     action_name = strpprintf(0, "%sAction", Z_STRVAL(XAN_G(default_action)));
 
     /* After founding the controller class do the annotation job */
@@ -168,7 +166,7 @@ class_entry:
         array_init(&XAN_G(call_chain));
 
     /* Call function with AOP think. */
-    call_annotation_function(NULL, controller_class_name, action_name, NULL, &retval);
+    call_annotation_function(&controller_obj, controller_class_name, action_name, NULL, &retval);
 
     /* If in auto render mode, to auto render the view */
     if ( XAN_G(auto_render) ) {

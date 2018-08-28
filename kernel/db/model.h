@@ -29,12 +29,16 @@
 #define PDO_SQL_ORDERBY "_pdo_orderby"
 #define PDO_SQL_LIMIT   "_pdo_limit"
 #define PDO_BIND_VALUE  "_pdo_bind_data"
-#define PDO_TABLEFIELDS "_pdo__table_fields"
+#define PDO_TABLEFIELDS "_pdo_table_fields"
 #define PDO_FIELDS_ARR  "_pdo_fields_arr"
 #define PDO_MODEL_ARRAY "_pdo_as_array"
 #define PDO_EXECUTE_SQL "_pdo_execute_sql"
 #define PDO_PRI_FIELD   "_pdo_primary_key"
 #define PDO_MODEL_DATA  "_pdo_model_data"
+#define PDO_INS_FIELD   "_pdo_insert_fields"
+#define PDO_INS_DATA    "_pdo_insert_data"
+#define PDO_UPD_SET     "_pdo_update_data"
+#define PDO_ROWS_COUNT  "_pdo_rows_count"
 
 /**
  * ALL ActiveRecord TYPE
@@ -45,6 +49,9 @@ enum {
     UPDATE,
     DELETE
 };
+
+/* Exeucte the SQL */
+void xan_execute_sql(zval *model_object, zend_string *sql, zval *bind_values, zval *ret_val, zval *retval);
 
 /* Get the table's fields */
 void xan_get_table_fields(zval *object, zval *pdo_object, zval *table_name);
@@ -57,6 +64,12 @@ void combine_array_where(zval *where, smart_str *str, zend_string *ikey, int inn
 
 /* Combine array group|order by condition */
 void combine_array_group_orderby(zval *by_condition, smart_str *str, int groupby);
+
+/* combine the array data into fields & values */
+void combine_array_insert_data(zval *data, smart_str *fields, smart_str *values);
+
+/* To combine the UPDATE SET */
+void combine_array_key_equal_value(zval *data, smart_str *str);
 
 /* Combine the SQL */
 zend_string *combine_all_sql(zval *object, int type);

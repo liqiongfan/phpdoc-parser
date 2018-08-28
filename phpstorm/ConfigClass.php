@@ -36,7 +36,7 @@ class ConfigClass
      * @param object $object The object which you want to set the attributes.
      * @param string $key    The string key also the attribute name
      * @param mixed $value   The value associated with the key
-     * @param $flags FINAL|PUBLIC and so on, or value with the `|` such as:
+     * @param int $flags FINAL|PUBLIC and so on, or value with the `|` such as:
      *                            FINAL | PUBLIC or
      *                            STATIC | PUBLIC | FINAL
      */

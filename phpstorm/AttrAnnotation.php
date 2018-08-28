@@ -20,7 +20,7 @@ namespace Xan\Type\Annotation;
  */
 class AttrAnnotation implements Annotation
 {
-    public function input($classEntry, $annotations)
-    {
+    public function input($classEntry, $annotations) {
+    
     }
 }

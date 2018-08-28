@@ -34,6 +34,7 @@
 #include "kernel/loader/loader.h"
 #include "ext/pdo/php_pdo_driver.h"
 #include "ext/standard/php_string.h"
+#include "Zend/zend_exceptions.h"
 
 /**
  * {{{
@@ -577,7 +578,8 @@ zend_bool xan_check_pdo_error(zval *pdo_object, zval *pdostatement_obj)
     zval *error_info    = INDEX_FIND(errorinfo, 2);
 
     if ( !zend_string_equals_literal(Z_STR_P(sqlstate_code), "00000") ) {
-        XAN_INFO(E_ERROR, "[ SQLSTATE:%s; ERRORINFO: %s ]\n", Z_STRVAL_P(sqlstate_code), Z_STRVAL_P(error_info));
+        zend_string *error_msg = strpprintf(0, "[ SQLSTATE:%s; ERRORINFO: %s ]\n", Z_STRVAL_P(sqlstate_code), Z_STRVAL_P(error_info));
+        zend_throw_exception( NULL, ZSTR_VAL(error_msg), 303 );
         return 0;
     } else {
         return 1;

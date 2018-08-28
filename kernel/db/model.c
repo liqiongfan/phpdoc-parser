@@ -86,6 +86,26 @@ ZEND_BEGIN_ARG_INFO_EX(ARGINFO(xan_model_one), 0, 0, 0)
     ZEND_ARG_INFO(0, bindValues)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(ARGINFO(xan_model_update), 0, 0, 0)
+    ZEND_ARG_INFO(0, datas)
+    ZEND_ARG_INFO(0, bindValues)
+    ZEND_ARG_INFO(0, where)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(ARGINFO(xan_model_save), 0, 0, 1)
+    ZEND_ARG_INFO(0, datas)
+    ZEND_ARG_INFO(0, bindValues)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(ARGINFO(xan_model_batch_save), 0, 0, 1)
+    ZEND_ARG_INFO(0, datas)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(ARGINFO(xan_model_delete), 0, 0, 0)
+    ZEND_ARG_INFO(0, where)
+    ZEND_ARG_INFO(0, bindValues)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO_EX(ARGINFO(xan_model_get), 0, 0, 1)
     ZEND_ARG_INFO(0, argName)
 ZEND_END_ARG_INFO()
@@ -99,6 +119,9 @@ ZEND_BEGIN_ARG_INFO_EX(ARGINFO(xan_model_as_array), 0, 0, 0)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(ARGINFO(xan_model_get_executed_sql), 0, 0, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(ARGINFO(xan_model_get_afected_rows), 0, 0, 0)
 ZEND_END_ARG_INFO()
 
 /*}}}*/
@@ -130,7 +153,7 @@ XAN_METHOD(Model, __construct)
 
     /* PDO_MODEL_DATA */
     zval *model_data = zend_read_property(XAN_ENTRY_OBJ(getThis()), XAN_STRL(PDO_MODEL_DATA), 1, NULL);
-    // array_init(model_data);
+    array_init(model_data);
 
     /* Run the `init` method if exists */
     if ( XAN_CHECK_METHOD(getThis(), "init") != NULL ) {
@@ -367,16 +390,16 @@ XAN_METHOD(Model, __set)
 
 again:
     model_fields = zend_read_property(XAN_ENTRY_OBJ(getThis()), XAN_STRL(PDO_TABLEFIELDS), 1, NULL);
-    if ( model_fields || !ZVAL_IS_NULL(model_fields) ) {
+    if ( model_fields && !ZVAL_IS_NULL(model_fields) ) {
         ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(model_fields), field) {
             if ( Z_TYPE_P(field) == IS_ARRAY ) {
                 zval *exist = STRING_FIND_P(field, "Field");
                 if ( exist ) {
                     if (Z_TYPE_P(exist) == IS_STRING) {
                         if ( zend_string_equals(key, Z_STR_P(exist)) ) {
-                            status = 1;
+                            status = -1;
                             zval *model_datas = zend_read_property(XAN_ENTRY_OBJ(getThis()), XAN_STRL(PDO_MODEL_DATA), 1, NULL);
-                            if (ZVAL_IS_NULL(model_datas)) {
+                            if (!model_datas || ZVAL_IS_NULL(model_datas)) {
                                 array_init(model_datas);
                             }
                             add_assoc_zval(model_datas, ZSTR_VAL(key), value);
@@ -386,7 +409,7 @@ again:
             }
         } ZEND_HASH_FOREACH_END();
     } else {
-        if ( status < 3 ) {
+        if ( status < 1 ) {
             /* To get the table fields into the object property */
             zval *pdo_object = zend_read_property(XAN_ENTRY_OBJ(getThis()), XAN_STRL(PDO_OBJECT), 1, NULL);
             xan_get_table_fields(getThis(), pdo_object, NULL );
@@ -396,7 +419,7 @@ again:
     }
 
     /* If property not exists in the table fields array. write the property into the object */
-    if ( !status ) {
+    if ( status != -1 ) {
         ZVAL_STR(&member, key);
         Z_OBJ_HT_P(getThis())->write_property(getThis(), &member, value, NULL);
         zval_ptr_dtor(&member);
@@ -421,7 +444,7 @@ XAN_METHOD(Model, limit)
     }
 
     if ( offset ) {
-        smart_str_appendc(&limit_str, ',');
+        smart_str_appends(&limit_str, " OFFSET ");
         smart_str_append_long(&limit_str, offset);
     }
 
@@ -450,7 +473,7 @@ XAN_METHOD(Model, all)
 
     /* To chech whether the model_data exists or not */
     zval *model_data = zend_read_property(XAN_ENTRY_OBJ(getThis()), XAN_STRL(PDO_MODEL_DATA), 1, NULL);
-    if ( model_data && !ZVAL_IS_NULL(model_data) ) {
+    if ( model_data && !ZVAL_IS_NULL(model_data) && Z_TYPE_P(model_data) == IS_ARRAY && Z_H_N_E(Z_ARRVAL_P(model_data)) ) {
         smart_str where_str = { 0 };
         combine_array_where(model_data, &where_str, NULL, 0, 0);
         smart_str_0(&where_str);
@@ -475,15 +498,18 @@ XAN_METHOD(Model, all)
     zend_update_property_str(XAN_ENTRY_OBJ(getThis()), XAN_STRL(PDO_EXECUTE_SQL), select_sql);
 
     if ( as_array && Z_LVAL_P(as_array) ) {
+        if ( Z_TYPE(retval) != IS_ARRAY ) {
+            array_init(return_value);
+        } else {
             ZVAL_COPY(return_value, &retval);
+        }
     } else {
         /* Array of the return value */
         array_init(return_value);
         ZEND_HASH_FOREACH_VAL(Z_ARRVAL(retval), bind_values) {
             zend_object *obj = zend_objects_clone_obj(getThis());
             ZVAL_OBJ(&temp_obj, obj);
-            /* zend_merge_properties(&temp_obj, Z_ARRVAL_P(bind_values)); */
-            zend_update_property(XAN_ENTRY_OBJ(&temp_obj), XAN_STRL(PDO_MODEL_DATA), bind_values);
+            zend_merge_properties(&temp_obj, Z_ARRVAL_P(bind_values));
             add_next_index_zval(return_value, &temp_obj);
         } ZEND_HASH_FOREACH_END();
     }
@@ -503,15 +529,15 @@ XAN_METHOD(Model, one)
         return ;
     }
     
-    /* To chech whether the model_data exists or not
+    /* To chech whether the model_data exists or not */
     zval *model_data = zend_read_property(XAN_ENTRY_OBJ(getThis()), XAN_STRL(PDO_MODEL_DATA), 1, NULL);
-    if ( model_data && !ZVAL_IS_NULL(model_data) ) {
+    if ( model_data && !ZVAL_IS_NULL(model_data) && Z_TYPE_P(model_data) == IS_ARRAY && Z_H_N_E(Z_ARRVAL_P(model_data)) ) {
         smart_str where_str = { 0 };
         combine_array_where(model_data, &where_str, NULL, 0, 0);
         smart_str_0(&where_str);
         zend_update_property_str(XAN_ENTRY_OBJ(getThis()), XAN_STRL(PDO_SQL_WHERE), where_str.s);
         smart_str_free(&where_str);
-    } */
+    }
 
     zend_string *select_sql = combine_all_sql(getThis(), SELECT);
 
@@ -529,11 +555,142 @@ XAN_METHOD(Model, one)
     xan_pdo_fetch(return_value, &retval);
     zend_update_property_str(XAN_ENTRY_OBJ(getThis()), XAN_STRL(PDO_EXECUTE_SQL), select_sql);
     if ( as_array && Z_LVAL_P(as_array) ) {
-        ZVAL_COPY(return_value, &retval);
+        if ( Z_TYPE(retval) != IS_ARRAY ) {
+            array_init(return_value);
+        } else {
+            ZVAL_COPY(return_value, &retval);
+        }
     } else {
-        zend_update_property(XAN_ENTRY_OBJ(getThis()), XAN_STRL(PDO_MODEL_DATA), &retval);
+        if ( Z_TYPE(retval) == IS_ARRAY ) {
+            zend_merge_properties(getThis(), Z_ARRVAL(retval));
+        }
         ZVAL_COPY(return_value, getThis());
     }
+}/*}}}*/
+
+/**
+ * {{{
+ * proto Model::update($where, $data[, $bindValues])
+ * UPDATE `pms_provider` SET `id` = 1, `grade` = 'E' WHERE `pid` = 10
+ */
+XAN_METHOD(Model, update)
+{
+    zval *where, *data, *bind_values = NULL, retval;
+
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "a|az", &data, &bind_values, &where) == FAILURE ) {
+        return ;
+    }
+
+    smart_str set_str = { 0 };
+    combine_array_key_equal_value(data, &set_str);
+    smart_str_0(&set_str);
+    zend_update_property_str(XAN_ENTRY_OBJ(getThis()), XAN_STRL(PDO_UPD_SET), set_str.s);
+    smart_str_free(&set_str);
+
+    smart_str t_str = { 0 };
+    zval *where_str = zend_read_property(XAN_ENTRY_OBJ(getThis()), XAN_STRL(PDO_SQL_WHERE), 1, NULL);
+    if ( where_str && !ZVAL_IS_NULL(where_str) && Z_TYPE_P(where_str) == IS_STRING && Z_STRLEN_P(where_str) > 0 ) {
+        smart_str_appends(&t_str, Z_STRVAL_P(where_str));
+        smart_str_appends(&t_str, " AND ");
+    }
+
+    if ( where ) {
+        if ( Z_TYPE_P(where) == IS_ARRAY ) {
+            combine_array_where(where, &t_str, NULL, 0, 0);
+        } else if ( Z_TYPE_P(where) == IS_STRING ) {
+            smart_str_appends(&t_str, Z_STRVAL_P(where));
+        } else {
+            XAN_INFO(E_ERROR, "Parameters $where must be array or string!");
+            return ;
+        }
+    }
+
+    smart_str_0(&t_str);
+    zend_update_property_str(XAN_ENTRY_OBJ(getThis()), XAN_STRL(PDO_SQL_WHERE), t_str.s);
+    smart_str_free(&t_str);
+
+    zend_string *update_sql = combine_all_sql(getThis(), UPDATE);
+
+    xan_execute_sql(getThis(), update_sql, bind_values, return_value, &retval);
+}/*}}}*/
+
+/**
+ * {{{
+ * proto Model::save($data, $bindValues)
+ * INSERT INTO `pms_provider` (`id`, `grade`) VALUES( 1, 'E' )
+ * The models' MODEL_DATA will be add to the SQL's fields & values colum
+ */
+XAN_METHOD(Model, save)
+{
+    zval *datas = NULL, *bind_values = NULL, retval;
+    if ( zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|aa", &datas, &bind_values) == FAILURE ) {
+        return ;
+    }
+
+    smart_str fields = { 0 }, values = { 0 };
+
+    zval *model_data = zend_read_property(XAN_ENTRY_OBJ(getThis()), XAN_STRL(PDO_MODEL_DATA), 1, NULL);
+    if ( model_data && !ZVAL_IS_NULL(model_data) && Z_TYPE_P(model_data) == IS_ARRAY && Z_H_N_E(Z_ARRVAL_P(model_data)) ) {
+        if ( datas ) {
+            zend_hash_merge(Z_ARRVAL_P(model_data), Z_ARRVAL_P(datas), (copy_ctor_func_t) zval_add_ref, 0);
+        }
+        combine_array_insert_data(model_data, &fields, &values);
+    } else {
+        if ( datas ) {
+            combine_array_insert_data(datas, &fields, &values);
+        }
+    }
+
+    smart_str_0(&fields);
+    smart_str_0(&values);
+    zend_update_property_str(XAN_ENTRY_OBJ(getThis()), XAN_STRL(PDO_INS_FIELD), fields.s);
+    zend_update_property_str(XAN_ENTRY_OBJ(getThis()), XAN_STRL(PDO_INS_DATA), values.s);
+    smart_str_free(&fields);
+    smart_str_free(&values);
+
+    zend_string *insert_sql = combine_all_sql(getThis(), INSERT);
+
+    xan_execute_sql(getThis(), insert_sql, bind_values, return_value, &retval);
+}/*}}}*/
+
+/**
+ * {{{
+ * proto Model::delete($where, $bindValues = [])
+ * DELETE * FROM `pms_provider` WHERE `id` = 1
+ */
+XAN_METHOD(Model, delete)
+{
+    zval *where = NULL, *bind_values = NULL, retval;
+
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|za", &where, &bind_values) == FAILURE ) {
+        return ;
+    }
+
+    smart_str t_str = { 0 };
+    zval *where_str = zend_read_property(XAN_ENTRY_OBJ(getThis()), XAN_STRL(PDO_SQL_WHERE), 1, NULL);
+    if ( where_str && !ZVAL_IS_NULL(where_str) && Z_TYPE_P(where_str) == IS_STRING && Z_STRLEN_P(where_str) > 0 ) {
+        smart_str_appends(&t_str, Z_STRVAL_P(where_str));
+        smart_str_appends(&t_str, " AND ");
+    }
+
+    if ( where ) {
+        if ( Z_TYPE_P(where) == IS_ARRAY ) {
+            combine_array_where(where, &t_str, NULL, 0, 0);
+        } else if ( Z_TYPE_P(where) == IS_STRING ) {
+            smart_str_appends(&t_str, Z_STRVAL_P(where));
+        } else {
+            XAN_INFO(E_ERROR, "Parameters $where must be array or string!");
+            return ;
+        }
+    }
+
+    smart_str_0(&t_str);
+    zend_update_property_str(XAN_ENTRY_OBJ(getThis()), XAN_STRL(PDO_SQL_WHERE), t_str.s);
+    smart_str_free(&t_str);
+
+    zend_string *delete_sql = combine_all_sql(getThis(), DELETE);
+
+    xan_execute_sql(getThis(), delete_sql, bind_values, return_value, &retval);
 }/*}}}*/
 
 /**
@@ -602,6 +759,30 @@ XAN_METHOD(Model, getExecutedSql)
 
 /**
  * {{{
+ * proto Model::getAffectedRows()
+ */
+XAN_METHOD(Model, getAffectedRows)
+{
+    if (zend_parse_parameters_none() == FAILURE ) {
+        return ;
+    }
+    zval *rows_count = zend_read_property(XAN_ENTRY_OBJ(getThis()), XAN_STRL(PDO_ROWS_COUNT), 1, NULL);
+    ZVAL_COPY(return_value, rows_count);
+    zend_update_property_long(XAN_ENTRY_OBJ(getThis()), XAN_STRL(PDO_ROWS_COUNT), 0);
+}/*}}}*/
+
+/**
+ * {{{ proto 
+ * Model::batchSave($datas = [])
+ * INSERT INTO `pms_provider` (`a`, `b`, `d`) VALUES ('aa', 'bb', 'dd'), ('aaa', 'bbb', 'ddd')
+ */
+XAN_METHOD(Model, batchSave)
+{
+
+}/*}}}*/
+
+/**
+ * {{{
  * model_functions
  */
 XAN_FUNCTIONS(model)
@@ -609,18 +790,22 @@ XAN_FUNCTIONS(model)
     XAN_ME(Model, __construct, arginfo_xan_model_construct, ZEND_ACC_PUBLIC | ZEND_ACC_FINAL)
     XAN_ME(Model, setAdapter, arginfo_xan_model_set_adapter, ZEND_ACC_PUBLIC | ZEND_ACC_FINAL)
     XAN_ME(Model, init, arginfo_xan_model_init, ZEND_ACC_PUBLIC )
-    XAN_ME(Model, fields, arginfo_xan_model_fields, ZEND_ACC_PUBLIC)
-    XAN_ME(Model, where, arginfo_xan_model_where, ZEND_ACC_PUBLIC)
-    XAN_ME(Model, groupBy, arginfo_xan_model_group_by, ZEND_ACC_PUBLIC)
-    XAN_ME(Model, having, arginfo_xan_model_having, ZEND_ACC_PUBLIC)
-    XAN_ME(Model, orderBy, arginfo_xan_model_order_by, ZEND_ACC_PUBLIC)
+    XAN_ME(Model, fields, arginfo_xan_model_fields, ZEND_ACC_PUBLIC | ZEND_ACC_FINAL)
+    XAN_ME(Model, where, arginfo_xan_model_where, ZEND_ACC_PUBLIC | ZEND_ACC_FINAL)
+    XAN_ME(Model, groupBy, arginfo_xan_model_group_by, ZEND_ACC_PUBLIC | ZEND_ACC_FINAL)
+    XAN_ME(Model, having, arginfo_xan_model_having, ZEND_ACC_PUBLIC | ZEND_ACC_FINAL)
+    XAN_ME(Model, orderBy, arginfo_xan_model_order_by, ZEND_ACC_PUBLIC | ZEND_ACC_FINAL)
     XAN_ME(Model, __set, arginfo_xan_model_set, ZEND_ACC_PUBLIC | ZEND_ACC_FINAL)
     XAN_ME(Model, __get, arginfo_xan_model_get, ZEND_ACC_PUBLIC | ZEND_ACC_FINAL)
     XAN_ME(Model, getExecutedSql, arginfo_xan_model_get_executed_sql, ZEND_ACC_PUBLIC | ZEND_ACC_FINAL)
-    XAN_ME(Model, limit, arginfo_xan_model_limit, ZEND_ACC_PUBLIC)
-    XAN_ME(Model, asArray, arginfo_xan_model_as_array, ZEND_ACC_PUBLIC)
-    XAN_ME(Model, all, arginfo_xan_model_all, ZEND_ACC_PUBLIC)
-    XAN_ME(Model, one, arginfo_xan_model_one, ZEND_ACC_PUBLIC)
+    XAN_ME(Model, limit, arginfo_xan_model_limit, ZEND_ACC_PUBLIC | ZEND_ACC_FINAL)
+    XAN_ME(Model, asArray, arginfo_xan_model_as_array, ZEND_ACC_PUBLIC | ZEND_ACC_FINAL)
+    XAN_ME(Model, all, arginfo_xan_model_all, ZEND_ACC_PUBLIC )
+    XAN_ME(Model, one, arginfo_xan_model_one, ZEND_ACC_PUBLIC )
+    XAN_ME(Model, save, arginfo_xan_model_save, ZEND_ACC_PUBLIC )
+    XAN_ME(Model, update, arginfo_xan_model_update, ZEND_ACC_PUBLIC )
+    XAN_ME(Model, delete, arginfo_xan_model_delete, ZEND_ACC_PUBLIC )
+    XAN_ME(Model, getAffectedRows, arginfo_xan_model_get_afected_rows, ZEND_ACC_PUBLIC | ZEND_ACC_FINAL)
 
 XAN_FUNCTIONS_END()
 /*}}}*/
@@ -647,12 +832,48 @@ XAN_INIT(model)
     XAN_PR_ESTRING(xan_model_ce, PDO_SQL_HAVING, ZEND_ACC_PROTECTED);
     XAN_PR_ESTRING(xan_model_ce, PDO_EXECUTE_SQL, ZEND_ACC_PROTECTED);
     XAN_PR_ESTRING(xan_model_ce, PDO_SQL_LIMIT, ZEND_ACC_PROTECTED);
+       XAN_PR_LONG(xan_model_ce, PDO_ROWS_COUNT, 0, ZEND_ACC_PROTECTED);
        XAN_PR_LONG(xan_model_ce, PDO_MODEL_ARRAY, 0, ZEND_ACC_PROTECTED);
        XAN_PR_NULL(xan_model_ce, PDO_BIND_VALUE, ZEND_ACC_PROTECTED);
        XAN_PR_NULL(xan_model_ce, PDO_TABLEFIELDS, ZEND_ACC_PROTECTED);
        XAN_PR_NULL(xan_model_ce, PDO_MODEL_DATA,  ZEND_ACC_PROTECTED);
        XAN_PR_NULL(xan_model_ce, PDO_FIELDS_ARR,  ZEND_ACC_PROTECTED);
     XAN_PR_ESTRING(xan_model_ce, PDO_PRI_FIELD, ZEND_ACC_PROTECTED);
+    XAN_PR_ESTRING(xan_model_ce, PDO_INS_FIELD, ZEND_ACC_PROTECTED);
+    XAN_PR_ESTRING(xan_model_ce, PDO_INS_DATA, ZEND_ACC_PROTECTED);
+    XAN_PR_ESTRING(xan_model_ce, PDO_UPD_SET, ZEND_ACC_PROTECTED);
+}/*}}}*/
+
+/**
+ * {{{
+ * To execute the SQL with the gien SQL
+ */
+void xan_execute_sql(zval *model_object, zend_string *sql, zval *bind_values, zval *ret_val, zval *retval)
+{
+    zval rows, *pdo_object;
+    
+    /* Get the PDO object */
+    pdo_object = zend_read_property(XAN_ENTRY_OBJ(model_object), XAN_STRL(PDO_OBJECT), 1, NULL);
+    
+    /* Do the prepare job. */
+    xan_pdo_prepare(pdo_object, ZSTR_VAL(sql), ret_val);
+
+    /* Check wheather the prepare occured the error. */
+    xan_check_pdo_error(pdo_object, NULL);
+
+    /* Execute the prepared SQL with the given binding values */
+    xan_pdo_execute(ret_val, bind_values, retval);
+
+    /* Check wheather the error info occured when executing */
+    xan_check_pdo_error(pdo_object, ret_val);
+
+    /* Save the affected rows */
+    xan_pdo_row_count(ret_val, &rows);
+    zend_update_property(XAN_ENTRY_OBJ(model_object), XAN_STRL(PDO_ROWS_COUNT), &rows);
+    
+    /* Return the executing result into the `retval` variable. release the temp variable */
+    ZVAL_COPY(ret_val, retval);
+    zval_ptr_dtor(&rows);
 }/*}}}*/
 
 /**
@@ -712,6 +933,61 @@ void xan_get_table_fields(zval *object, zval *pdo_object, zval *table_name)
 }/*}}}*/
 
 /**
+ * {{{
+ * To compine the array fields into the fields string & values string
+ * It combine the INSERT INTO (a, b, c) VALUES (aa, bb, cc)
+ */
+void combine_array_insert_data(zval *data, smart_str *fields, smart_str *values)
+{
+    zval *value;
+    zend_string *key;
+    int i = 0, num, quote = 0;
+
+    if ( Z_TYPE_P(data) == IS_ARRAY ) {
+
+        num = Z_H_N_E(Z_ARRVAL_P(data));
+        num = num ? num - 1 : num;
+
+        ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(data), key, value) {
+
+            if ( !ZSTR_LEN(key) ) {
+                continue;
+            }
+
+            smart_str_appendc(fields, '`');
+            smart_str_appends(fields, ZSTR_VAL(key));
+            smart_str_appendc(fields, '`');
+
+            switch ( Z_TYPE_P(value) ) {
+                case IS_LONG:
+                    smart_str_append_long(values, Z_LVAL_P(value));
+                    break;
+                case IS_DOUBLE:
+                case IS_OBJECT:
+                    convert_to_string(value);
+                case IS_STRING:
+                    if ( Z_STRVAL_P(value)[0] == ':' ) {
+                        quote = 0;
+                    } else {
+                        quote = 1;
+                    }
+                    if ( quote )
+                        smart_str_appendc(values, '\'');
+                    smart_str_appends(values, ZSTR_VAL(php_addslashes(Z_STR_P(value), 1)) );
+                    if ( quote )
+                        smart_str_appendc(values, '\'');
+                    break;
+            } 
+
+            if ( i++ < num ) {
+                smart_str_appendc(fields, ',');
+                smart_str_appendc(values, ',');
+            }
+        } ZEND_HASH_FOREACH_END();
+    }
+}/*}}}*/
+
+/**
  * To combine the array fields
  * such as [ 'a', 'id', 'address' ]
  * or [ 'a' => 'aa', 'id' => 'sid' ] to use the rename feature
@@ -733,8 +1009,12 @@ void combine_array_fields(zval *fields, smart_str *str)
                 
                 if ( !bucket->key ) {
                     switch (Z_TYPE(bucket->val)) {
+                        case IS_LONG:
+                            convert_to_string(&bucket->val);
                         case IS_STRING:
-                            if ( (strchr(Z_STRVAL(bucket->val), '(') != NULL) || (strchr(Z_STRVAL(bucket->val), ' ') != NULL) ) {
+                            if ( (strchr(Z_STRVAL(bucket->val), '(') != NULL) 
+                                || (strchr(Z_STRVAL(bucket->val), '.') != NULL) 
+                            ) {
                                 quote = 1;
                             }  else {
                                 quote = 0;
@@ -748,11 +1028,6 @@ void combine_array_fields(zval *fields, smart_str *str)
                                 smart_str_appendc(str, '`');
                             }
                             break;
-                        case IS_LONG:
-                            smart_str_appendc(str, '`');
-                            smart_str_append_long(str, Z_LVAL(bucket->val));
-                            smart_str_appendc(str, '`');
-                            break;
                         case IS_DOUBLE:
                             smart_str_appendc(str, '`');
                             smart_str_appends(str, ZSTR_VAL(strpprintf(0, "%f", Z_DVAL(bucket->val))));
@@ -760,7 +1035,9 @@ void combine_array_fields(zval *fields, smart_str *str)
                             break;
                     }
                 } else {
-                    if ( (strchr(ZSTR_VAL(bucket->key), '(') != NULL) || (strchr(ZSTR_VAL(bucket->key), ' ') != NULL) ) {
+                    if ( (strchr(ZSTR_VAL(bucket->key), '(') != NULL) 
+                        || (strchr(ZSTR_VAL(bucket->key), ',') != NULL) 
+                    ) {
                         quote = 1;
                     } else {
                         quote = 0;
@@ -797,6 +1074,69 @@ void combine_array_fields(zval *fields, smart_str *str)
 }/*}}}*/
 
 /**
+ * {{{
+ * To combine the array data
+ * UPDATE SET xx = xx, xx = xx
+ */
+void combine_array_key_equal_value(zval *data, smart_str *str)
+{
+    zval *value;
+    zend_string *key;
+    int i = 0, num, quote = 0;
+
+    if (Z_TYPE_P(data) == IS_ARRAY) {
+
+        num = Z_H_N_E(Z_ARRVAL_P(data));
+        num = num ? num - 1 : num;
+
+        ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(data), key, value) {
+
+            if ( !ZSTR_LEN(key) ) continue;
+
+            if ( strchr(ZSTR_VAL(key), '.') != NULL ||
+                 strchr(ZSTR_VAL(key), '(') != NULL
+            ) {
+                quote = 0;
+            } else {
+                quote = 1;
+            }
+
+            if ( quote ) smart_str_appendc(str, '`');
+            smart_str_appends(str, ZSTR_VAL(key));
+            if ( quote ) smart_str_appendc(str, '`');
+            smart_str_appends(str, " = ");
+
+            switch (Z_TYPE_P(value)) {
+                case IS_LONG:
+                    smart_str_append_long(str, Z_LVAL_P(value));
+                    break;
+                case IS_DOUBLE:
+                case IS_OBJECT:
+                    convert_to_string(value);
+                case IS_STRING:
+                    if ( Z_STRVAL_P(value)[0] == ':'
+                    ) {
+                        quote = 0;
+                    } else {
+                        quote = 1;
+                    }
+
+                    if ( quote )
+                        smart_str_appendc(str, '\'');
+                    smart_str_appends(str, ZSTR_VAL(php_addslashes(Z_STR_P(value), 1)) );
+                    if ( quote )
+                        smart_str_appendc(str, '\'');
+                    break;
+            }
+
+            if ( i++ < num ) {
+                smart_str_appends(str, ", ");
+            }
+        } ZEND_HASH_FOREACH_END();
+    }
+}/*}}}*/
+
+/**
  * To combine the array fields
  * such as [ 'a' => '11', 'b' => 2, 'a - 1' => '3', 'a' => [ '>' => '2' ] ]
  */
@@ -827,7 +1167,7 @@ void combine_array_where(zval *where, smart_str *str, zend_string *ikey, int inn
             }
 
             if (!inner) {
-                if ( strchr(ZSTR_VAL(bucket->key), '(') != NULL && strchr(ZSTR_VAL(bucket->key), ' ') != NULL) {
+                if ( strchr(ZSTR_VAL(bucket->key), '(') != NULL && strchr(ZSTR_VAL(bucket->key), '.') != NULL) {
                     kquote = 1;
                 } else {
                     kquote = 0;
@@ -859,7 +1199,7 @@ void combine_array_where(zval *where, smart_str *str, zend_string *ikey, int inn
             if ( Z_TYPE(bucket->val) != IS_ARRAY ) {
                 
                 if ( !inner ) {
-                    smart_str_appendc(str, '=');
+                    smart_str_appends(str, " = ");
                 }
 
                 switch (Z_TYPE(bucket->val)) {
@@ -867,7 +1207,7 @@ void combine_array_where(zval *where, smart_str *str, zend_string *ikey, int inn
                         if ( Z_STRVAL(bucket->val)[0] != ':' ) {
                             smart_str_appendc(str, '\'');
                         }
-                        smart_str_appends(str, Z_STRVAL(bucket->val));
+                        smart_str_appends(str, ZSTR_VAL(php_addslashes(Z_STR(bucket->val), 1)) );
                         if ( Z_STRVAL(bucket->val)[0] != ':' ) {
                             smart_str_appendc(str, '\'');
                         }
@@ -965,22 +1305,29 @@ void combine_array_group_orderby(zval *by_condition, smart_str *str, int groupby
 
 /**
  * To comtine the SQL and return
+ * NOTE THAT:
+ *  In current condition, Xan's model only support `INSERT` | `DELETE` | `UPDATE` | `SELECT`
  */
 zend_string *combine_all_sql(zval *object, int type)
 {
-    zval *table_name = zend_read_property(XAN_ENTRY_OBJ(object), XAN_STRL(PDO_TABLENAME), 1, NULL);
+    zend_string *result_sql;
+
     zval *fields     = zend_read_property(XAN_ENTRY_OBJ(object), XAN_STRL(PDO_SQL_FIELDS), 1, NULL);
-    zval *where      = zend_read_property(XAN_ENTRY_OBJ(object), XAN_STRL(PDO_SQL_WHERE), 1, NULL);
     zval *group_by   = zend_read_property(XAN_ENTRY_OBJ(object), XAN_STRL(PDO_SQL_GROUPBY), 1, NULL);
     zval *having     = zend_read_property(XAN_ENTRY_OBJ(object), XAN_STRL(PDO_SQL_HAVING), 1, NULL);
     zval *order_by   = zend_read_property(XAN_ENTRY_OBJ(object), XAN_STRL(PDO_SQL_ORDERBY), 1, NULL);
     zval *limit      = zend_read_property(XAN_ENTRY_OBJ(object), XAN_STRL(PDO_SQL_LIMIT), 1, NULL);
+    
+    zval *table_name = zend_read_property(XAN_ENTRY_OBJ(object), XAN_STRL(PDO_TABLENAME), 1, NULL);
+    zval *where      = zend_read_property(XAN_ENTRY_OBJ(object), XAN_STRL(PDO_SQL_WHERE), 1, NULL);
 
-    zend_string *result_sql;
+    zval *ins_fields = zend_read_property(XAN_ENTRY_OBJ(object), XAN_STRL(PDO_INS_FIELD), 1, NULL);
+    zval *ins_data   = zend_read_property(XAN_ENTRY_OBJ(object), XAN_STRL(PDO_INS_DATA), 1, NULL);
+    zval *upd_data   = zend_read_property(XAN_ENTRY_OBJ(object), XAN_STRL(PDO_UPD_SET), 1, NULL);
 
     switch (type) {
         case SELECT:
-            result_sql = strpprintf( 0, 
+            result_sql = strpprintf(0, 
                 "SELECT %s FROM %s%s%s%s%s%s%s%s%s%s%s",
                 !Z_STRLEN_P(fields) ? "*" : Z_STRVAL_P(fields),
                 Z_STRVAL_P(table_name),
@@ -996,17 +1343,30 @@ zend_string *combine_all_sql(zval *object, int type)
                 !Z_STRLEN_P(limit) ? "" : Z_STRVAL_P(limit)
             ); 
             break;
-        
         case INSERT:
-
+            result_sql = strpprintf(0, 
+                "INSERT INTO `%s` (%s) VALUES(%s)",
+                Z_STRVAL_P(table_name),
+                Z_STRVAL_P(ins_fields),
+                Z_STRVAL_P(ins_data)
+            );
             break;
-        
         case UPDATE:
-
+            result_sql = strpprintf(0,
+                "UPDATE `%s` SET %s%s%s",
+                Z_STRVAL_P(table_name),
+                Z_STRVAL_P(upd_data),
+                !Z_STRLEN_P(where) ? "" : " WHERE ",
+                !Z_STRLEN_P(where) ? "" : Z_STRVAL_P(where)
+            );
             break;
-
         case DELETE:
-    
+            result_sql = strpprintf(0,
+                "DELETE FROM `%s`%s%s",
+                Z_STRVAL_P(table_name),
+                !Z_STRLEN_P(where) ? "" : " WHERE ",
+                !Z_STRLEN_P(where) ? "" : Z_STRVAL_P(where)
+            );
             break;
     }
 
@@ -1016,6 +1376,9 @@ zend_string *combine_all_sql(zval *object, int type)
     zend_update_property_string(XAN_ENTRY_OBJ(object), XAN_STRL(PDO_SQL_HAVING), "");
     zend_update_property_string(XAN_ENTRY_OBJ(object), XAN_STRL(PDO_SQL_ORDERBY), "");
     zend_update_property_string(XAN_ENTRY_OBJ(object), XAN_STRL(PDO_SQL_LIMIT), "");
+    zend_update_property_string(XAN_ENTRY_OBJ(object), XAN_STRL(PDO_INS_FIELD), "");
+    zend_update_property_string(XAN_ENTRY_OBJ(object), XAN_STRL(PDO_INS_DATA), "");
+    zend_update_property_string(XAN_ENTRY_OBJ(object), XAN_STRL(PDO_UPD_SET), "");
 
     return result_sql;
 }/*}}}*/

@@ -38,6 +38,11 @@ ZEND_BEGIN_ARG_INFO_EX(ARGINFO(xan_view_render), 0, 0, 2)
     ZEND_ARG_INFO(0, variables)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(ARGINFO(xan_view_partial), 0, 0, 2)
+    ZEND_ARG_INFO(0, template)
+    ZEND_ARG_INFO(0, variables)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO_EX(ARGINFO(xan_view_assign), 0, 0, 2)
     ZEND_ARG_INFO(0, name)
     ZEND_ARG_INFO(0, value)
@@ -80,6 +85,35 @@ XAN_METHOD(View, render)
     render_file = strpprintf(0, "%s/modules/%s/views/%s/%s.%s", 
                 Z_STRVAL(XAN_G(application_dir)), Z_STRVAL(XAN_G(default_module)), 
                 Z_STRVAL(XAN_G(default_controller)), ZSTR_VAL(template_file), Z_STRVAL(XAN_G(view_suffix))
+    );
+
+    is_file(ZSTR_VAL(render_file));
+    xan_require_file(ZSTR_VAL(render_file), dvariables, getThis(), NULL);
+}/*}}}*/
+
+/**
+ * {{{ proto 
+ * View::partial()
+ */
+XAN_METHOD(View, partial)
+{
+    zval *variables = NULL, *dvariables, *value;
+    zend_string *template_file, *render_file, *key;
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "S|z", &template_file, &variables) == FAILURE) {
+        return ;
+    }
+
+    dvariables = zend_read_property(XAN_ENTRY_OBJ(getThis()), XAN_STRL("variables"), 1, NULL);
+    if ( variables && !ZVAL_IS_NULL(variables) ) {
+        if ( !dvariables || ZVAL_IS_NULL(dvariables)) {
+            array_init(dvariables);
+        }
+        zend_hash_merge(Z_ARRVAL_P(dvariables), Z_ARRVAL_P(variables), zval_add_ref, 0);
+    }
+
+    Z_STRVAL(XAN_G(default_controller))[0] = tolower(Z_STRVAL(XAN_G(default_controller))[0]);
+    render_file = strpprintf(0, "%s/modules/views/%s.%s", 
+                Z_STRVAL(XAN_G(application_dir)), ZSTR_VAL(template_file), Z_STRVAL(XAN_G(view_suffix))
     );
 
     is_file(ZSTR_VAL(render_file));
@@ -129,6 +163,7 @@ XAN_METHOD(View, setAutoRender)
 XAN_FUNCTIONS(view)
     XAN_ME(View, __construct, arginfo_xan_view_construct, ZEND_ACC_PUBLIC)
     XAN_ME(View, render, arginfo_xan_view_render, ZEND_ACC_PUBLIC)
+    XAN_ME(View, partial, arginfo_xan_view_partial, ZEND_ACC_PUBLIC)
     XAN_ME(View, assign, arginfo_xan_view_render, ZEND_ACC_PUBLIC)
     XAN_ME(View, setAutoRender, arginfo_xan_view_set_auto_render, ZEND_ACC_PUBLIC)
 XAN_FUNCTIONS_END()

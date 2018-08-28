@@ -1,10 +1,10 @@
 # Xan 高性能的PHP扩展框架
 
-An extension WEB develop framework for PHPer. written in C.
+An extension for PHP document parsing. written in C code.
 
 Author：Josin <774542602@qq.com> | <a href="https://www.supjos.cn/archives/46.html#directory0065624643873947846">博客</a>
 
-**Xan是一款高性能的易于使用上手的PHP开发框架，颠覆了传统的配置模式，利用注解进行替代文件配置，便于优化代码、清晰逻辑；并且基于C语言开发，性能极高。**
+**Xan是一款高性能的易于使用上手的PHP开发框架，颠覆了传统的配置模式，更新为注解机制，利用注解进行配置，便于优化代码、清晰逻辑；并且基于C语言开发，性能极高。**
 
 #### 框架特点：
 
@@ -64,6 +64,55 @@ class A
 
 **3、** **XML** 数据，如果键名为数字也就是索引数组的情况下，系统会自动创建 **key** 作为元素标签名。系统会自动创建一个 **root** 键名作为根元素的键名。
 
+##  注解初始化类属性
+
+目前注解类已经在 __`C`__ 语言底层实现 __`ConstAnnotation`__ 与 __`AttrAnnotation`__ ，用来初始化类的常量与普通的属性，但是 __用户可以自定义注解只需要实现接口__  __`Xan\Type\Annotation\Annotation`__ ，然后实现接口方法： __`input`__  即可，本功能需要使用内置的 __`自动加载引擎`__ 才可以，如下：
+
+__`index.php`__ 文件代码如下：
+
+```php
+// 使用 Xan\Loader 加载引擎完成类的自动加载功能
+$loader = new \Xan\Loader();
+
+// 当前的 app 命名空间是当前文件夹
+// 本方法可以多次调用来生成多个命名空间，优先级的顺序越来越低
+$loader->setMap('@app', __DIR__);
+
+$loader->start();
+
+// 开始使用注解功能
+$base = new app\Base();
+
+echo "TOOL常量："    . app\Base::TOOL;
+echo "URL常量："     . app\Base::URL;
+echo "name属性："    . $base->name;
+echo "version属性：" . $base->version;
+```
+
+__`app\Base`__ 类的代码如下(文件命名为：__`Base.php`__)：
+
+```php
+namespace app;
+
+/**
+ * Class Base
+ *
+ * @\Xan\Type\Annotation\AttrAnnotation(name="Xannotation", version="v1.0.2")
+ * @\Xan\Type\Annotation\ConstAnnotation(TOOL="C/C++", URL="https://www.supjos.cn")
+ */
+class Base
+{
+    const GAP = 1;
+}
+```
+
+工程的文件路径示意：
+
+```php
+-dir
+  +index.php
+  +Base.php
+```
 
 ## AOP切面思想 ##
 
@@ -75,7 +124,7 @@ __重要概念：__
 
 2、 __切入点__ ，捕获连接点的结构，一般可以通过正则匹配或者表达式，目前  __Xan__ 并不支持
 
-3、 __通知__ ，切入点的业务逻辑代码，目前 __Xan__ 支持( __@before__, __@after__, __@success__, __@failure__)四种通知
+3、 __通知__ ，切入点的业务逻辑代码，目前 __Xan__ 支持(@before, @after, @success, @failure)四种通知
 
 4、 __切面__ ，定义一个切面类，使用注解： __`@Aspect`__ 来定义一个切面
 
@@ -139,7 +188,7 @@ $base = Xan\Aop\Proxy::instance(Base::class);
 $base->test();
 ```
 
-**注意：在 __Xan__ 中通知是可以无止境的嵌套运行的，也就是一个通知可以嵌套运行另一个通知，每一个通知都有一个通知链，不可以进行闭合通知的，如果闭合通知，则会提示一个 “ __Fatal Error：Recursive calling: xx::xx__ ” 的致命错误**
+**注意：在Xan中通知是可以无止境的嵌套运行的，也就是一个通知可以嵌套运行另一个通知，每一个通知都有一个通知链，不可以进行闭合通知的，如果闭合通知，则会提示一个 “ Fatal Error：Recursive calling: xx::xx ” 的致命错误**
 
 ## 支持环境 ##
 
@@ -284,11 +333,7 @@ class Loader
 namespace Xan;
 class Loader
 {
-    /**
-     * @deprecated since v0.1.1 Loader's construct function will auto start the register job
-     * instead of the `start($prepend)` function
-     */
-    function start($prepend = false);
+    function autoLoad($prepend = false);
 }
 ```
 

@@ -21,8 +21,8 @@ namespace Xan\Type\Annotation;
  * class A
  * {
  *      @CartAnnotation(num=5, owner="Josin", money="55.5")
- *      function addToCart()
- *      {
+ *      function addToCart() {
+ *
  *      }
  * }
  *
@@ -30,8 +30,7 @@ namespace Xan\Type\Annotation;
  *
  * class TagAnnotation implements Annotation
  * {
- *      public function input($className, $annotations)
- *      {
+ *      public function input($className, $annotations) {
  *          // $className will be class name: 'A'
  *          // $annotations will be array: [ 'TT' => 'Xan', 'VV' => 'Extension ]
  *      }
@@ -40,8 +39,7 @@ namespace Xan\Type\Annotation;
  *
  * class CartAnnotation implements Annotation
  * {
- *      public function input($object, $annotations)
- *      {
+ *      public function input($object, $annotations) {
  *          // $object was object created by class A
  *          // $annotations was an array: [ 'num' => 5, 'owner' => 'Josin', 'money' => 55.5 ]
  *      }

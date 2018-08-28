@@ -29,8 +29,8 @@ class Loader
      *
      * The constructor of the Xan\Loader class
      */
-    function __construct()
-    {
+    function __construct() {
+    
     }
 
     /**
@@ -41,18 +41,18 @@ class Loader
      *   setMap('@app', __DIR__);
      * </pre>
      *
-     * @param $aliasName    string The $aliasName which start with '@' char.
-     * @param $aliasPath    string The absolute path corresponding to the $aliasName
-     * @return bool  true/false
+     * @param string $aliasName    string The $aliasName which start with '@' char.
+     * @param string $aliasPath    string The absolute path corresponding to the $aliasName
+     * @return bool true/false
      */
-    function setMap($aliasName, $aliasPath) : bool
-    {
+    function setMap($aliasName, $aliasPath) : bool {
+    
     }
 
     /**
      * Start the auto load step
      */
-    function start()
-    {
+    function start() {
+    
     }
 }

@@ -27,6 +27,8 @@
 #include "ext/standard/info.h"
 #include "php_xannotation.h"
 #include "Zend/zend_interfaces.h"
+#include <sys/types.h>
+#include <sys/sysctl.h>
 
 /* If you declare any globals in php_xannotation.h uncomment this:
 */
@@ -43,15 +45,16 @@ XAN_INIT(app);
 XAN_INIT(view);
 XAN_INIT(loader);
 XAN_INIT(adapter);
+XAN_INIT(session);
 XAN_INIT(model);
 XAN_INIT(request);
 XAN_INIT(response);
 XAN_INIT(aop_proxy);
 XAN_INIT(annotation);
+XAN_INIT(aspect_annotation);
 XAN_INIT(config_class);
 XAN_INIT(attr_annotation);
 XAN_INIT(const_annotation);
-XAN_INIT(aspect_annotation);
 
 /*}}}*/
 
@@ -81,6 +84,149 @@ PHP_FUNCTION(get_xan_version)
 	RETURN_STRING(PHP_XANNOTATION_VERSION);
 }
 /* }}} */
+
+/**
+ * {{{ 
+ * proto string To get the system release info
+ */
+PHP_FUNCTION(get_system_release)
+{
+	if (zend_parse_parameters_none() == FAILURE) {
+		return ;
+	}
+
+	size_t len;
+	char *info = NULL;
+	int mb[2] = { CTL_KERN, KERN_OSRELEASE };
+
+	if ( 0 != sysctl(mb, 2, NULL, &len, NULL, 0)) {
+		XAN_INFO(E_ERROR, "sysctlbyname calling error!");
+		return ;
+	}
+
+	info = (char *)malloc(len);
+	if ( 0 != sysctl(mb, 2, info, &len, NULL, 0) ) {
+		XAN_INFO(E_ERROR, "sysctlbyname calling error!");
+	}
+
+	ZVAL_STRING(return_value, info);
+	free(info);
+}/*}}}*/
+
+/**
+ * {{{ 
+ * proto string To get the system memory size info
+ */
+PHP_FUNCTION(get_system_memsize)
+{
+	if (zend_parse_parameters_none() == FAILURE) {
+		return ;
+	}
+	int64_t memsize;
+	int mb[2] = { CTL_HW, HW_MEMSIZE };
+	size_t len = sizeof(int64_t);
+	if ( 0 != sysctl(mb, 2, &memsize, &len, NULL, 0 ) ) {
+		XAN_INFO(E_ERROR, "sysctl calling error!");
+	}
+
+	ZVAL_DOUBLE(return_value, memsize/1024.0/1024.0/1024.0);
+}/*}}}*/
+
+/**
+ * {{{ 
+ * proto string To get the os version info
+ */
+PHP_FUNCTION(get_os_version)
+{
+	if (zend_parse_parameters_none() == FAILURE) {
+		return ;
+	}
+
+	size_t len;
+	int mb[2] = { CTL_KERN, KERN_OSVERSION };
+	char *info = NULL;
+	if ( 0 != sysctl( mb, 2, NULL, &len, NULL, 0)) {
+		XAN_INFO(E_ERROR, "sysctlbyname calling error!");
+		return ;
+	}
+
+	info = (char *)malloc(len);
+	if ( 0 != sysctl( mb, 2, info, &len, NULL, 0) ) {
+		XAN_INFO(E_ERROR, "sysctlbyname calling error!");
+	}
+
+	ZVAL_STRING(return_value, info);
+	free(info);
+}/*}}}*/
+
+/**
+ * {{{ 
+ * proto string To get the os kernel version info
+ */
+PHP_FUNCTION(get_kernel_version)
+{
+	if (zend_parse_parameters_none() == FAILURE) {
+		return ;
+	}
+
+	size_t len;
+	int mb[2] = { CTL_KERN, KERN_VERSION };
+	char *info = NULL;
+	if ( 0 != sysctl( mb, 2, NULL, &len, NULL, 0)) {
+		XAN_INFO(E_ERROR, "sysctlbyname calling error!");
+		return ;
+	}
+
+	info = (char *)malloc(len);
+	if ( 0 != sysctl( mb, 2, info, &len, NULL, 0) ) {
+		XAN_INFO(E_ERROR, "sysctlbyname calling error!");
+	}
+
+	ZVAL_STRING(return_value, info);
+	free(info);
+}/*}}}*/
+
+/**
+ * {{{ 
+ * proto string To get the os type info
+ */
+PHP_FUNCTION(get_os_type)
+{
+	if (zend_parse_parameters_none() == FAILURE) {
+		return ;
+	}
+
+	size_t len;
+	int mb[2] = { CTL_KERN, KERN_OSTYPE };
+	char *info = NULL;
+	if ( 0 != sysctl(mb, 2, NULL, &len, NULL, 0) ) {
+		XAN_INFO(E_ERROR, "sysctlbyname calling error!");
+		return ;
+	}
+
+	info = (char *)malloc(len);
+	if ( 0 != sysctl(mb, 2, info, &len, NULL, 0) ) {
+		XAN_INFO(E_ERROR, "sysctlbyname calling error!");
+	}
+
+	ZVAL_STRING(return_value, info);
+	free(info);
+}/*}}}*/
+
+
+/**
+ * {{{ 
+ * proto string To get the os version info
+ */
+PHP_FUNCTION(get_php_version)
+{
+	if (zend_parse_parameters_none() == FAILURE) {
+		return ;
+	}
+	RETURN_STRING(PHP_VERSION);
+}/*}}}*/
+
+
 /* The previous line is meant for vim and emacs, so it can correctly fold and
    unfold functions in source code. See the corresponding marks just before
    function definition, where the functions purpose is also documented. Please
@@ -115,10 +261,11 @@ PHP_MINIT_FUNCTION(xannotation)
 	response_init();
 	aop_proxy_init();
 	annotation_init();
-	config_class_init();
+	aspect_annotation_init();
 	attr_annotation_init();
 	const_annotation_init();
-	aspect_annotation_init();
+	config_class_init();
+	session_init();
 
 	return SUCCESS;
 }
@@ -157,15 +304,15 @@ PHP_RINIT_FUNCTION(xannotation)
 	XAN_G(must_url_suffix) 	= 0;
 	XAN_G(auto_render) 		= 0;
 	array_init(&XAN_G(allow_modules));
-	ZVAL_STRING(&XAN_G(url_suffix), "html");
-	ZVAL_STRING(&XAN_G(url_get_str), "_xurl");
-	ZVAL_STRING(&XAN_G(application_dir), ".");
-	ZVAL_STRING(&XAN_G(default_namespace), "app");
-	ZVAL_STRING(&XAN_G(view_suffix), "html");
-	ZVAL_STRING(&XAN_G(default_action), "index");
-	ZVAL_STRING(&XAN_G(default_module), "index");
-	ZVAL_STRING(&XAN_G(default_controller), "index");
-	add_next_index_string(&XAN_G(allow_modules), "index");
+	ZVAL_STRING(&XAN_G(url_suffix), 				"html");
+	ZVAL_STRING(&XAN_G(url_get_str), 				"_xurl");
+	ZVAL_STRING(&XAN_G(application_dir), 			".");
+	ZVAL_STRING(&XAN_G(default_namespace), 			"app");
+	ZVAL_STRING(&XAN_G(view_suffix), 				"html");
+	ZVAL_STRING(&XAN_G(default_action), 			"index");
+	ZVAL_STRING(&XAN_G(default_module), 			"index");
+	ZVAL_STRING(&XAN_G(default_controller), 		"index");
+	add_next_index_string(&XAN_G(allow_modules), 	"index");
 
 
 	return SUCCESS;
@@ -207,6 +354,12 @@ PHP_MINFO_FUNCTION(xannotation)
  */
 const zend_function_entry xannotation_functions[] = {
 	PHP_FE(get_xan_version,	NULL)
+	PHP_FE(get_system_release,	NULL)
+	PHP_FE(get_os_version,	NULL)
+	PHP_FE(get_os_type,	NULL)
+	PHP_FE(get_kernel_version,	NULL)
+	PHP_FE(get_system_memsize,	NULL)
+	PHP_FE(get_php_version,	NULL)
 	PHP_FE_END
 };
 /* }}} */
