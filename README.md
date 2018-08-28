@@ -64,56 +64,6 @@ class A
 
 **3、** **XML** 数据，如果键名为数字也就是索引数组的情况下，系统会自动创建 **key** 作为元素标签名。系统会自动创建一个 **root** 键名作为根元素的键名。
 
-##  注解初始化类属性
-
-目前注解类已经在 __`C`__ 语言底层实现 __`ConstAnnotation`__ 与 __`AttrAnnotation`__ ，用来初始化类的常量与普通的属性，但是 __用户可以自定义注解只需要实现接口__  __`Xan\Type\Annotation\Annotation`__ ，然后实现接口方法： __`input`__  即可，本功能需要使用内置的 __`自动加载引擎`__ 才可以，如下：
-
-__`index.php`__ 文件代码如下：
-
-```php
-// 使用 Xan\Loader 加载引擎完成类的自动加载功能
-$loader = new \Xan\Loader();
-
-// 当前的 app 命名空间是当前文件夹
-// 本方法可以多次调用来生成多个命名空间，优先级的顺序越来越低
-$loader->setMap('@app', __DIR__);
-
-$loader->start();
-
-// 开始使用注解功能
-$base = new app\Base();
-
-echo "TOOL常量："    . app\Base::TOOL;
-echo "URL常量："     . app\Base::URL;
-echo "name属性："    . $base->name;
-echo "version属性：" . $base->version;
-```
-
-__`app\Base`__ 类的代码如下(文件命名为：__`Base.php`__)：
-
-```php
-namespace app;
-
-/**
- * Class Base
- *
- * @\Xan\Type\Annotation\AttrAnnotation(name="Xannotation", version="v1.0.2")
- * @\Xan\Type\Annotation\ConstAnnotation(TOOL="C/C++", URL="https://www.supjos.cn")
- */
-class Base
-{
-    const GAP = 1;
-}
-```
-
-工程的文件路径示意：
-
-```php
--dir
-  +index.php
-  +Base.php
-```
-
 ## AOP切面思想 ##
 
 __切面思想__：将那些与业务无关，却为业务模块所共同调用的逻辑或责任封装起来，便于减少系统的重复代码，降低 模块间的耦合度，并有利于未来的可操作性和可维护性；AOP是一个横向的关系组合，也就是将应用中的公共服务进行分离。
@@ -154,12 +104,7 @@ class Basic
     {
         echo 'success';
     }
-    
-    function failure()
-    {
-        echo 'failure';
-    }
-    
+ 
     /**
      * 定义通知
      * 通知支持传递参数到指定的切入点，如需指定参数，那么必须使用
@@ -188,7 +133,150 @@ $base = Xan\Aop\Proxy::instance(Base::class);
 $base->test();
 ```
 
-**注意：在Xan中通知是可以无止境的嵌套运行的，也就是一个通知可以嵌套运行另一个通知，每一个通知都有一个通知链，不可以进行闭合通知的，如果闭合通知，则会提示一个 “ Fatal Error：Recursive calling: xx::xx ” 的致命错误**
+**注意：在Xan中通知是可以无止境的嵌套运行的，也就是一个通知可以嵌套运行另一个通知，每一个通知都有一个通知链，不可以进行闭合通知的，如果闭合通知，则会提示一个 “ __Fatal Error：Recursive calling: xx::xx__ ” 的致命错误**
+
+## WEB示例 ##
+
+```php
+    
+    $loader = new Xan\Loader();
+    $loader->setMap('@app', __DIR__);
+
+    $app = new Xan\App();
+    $app->bootstrap()->run();
+```
+
+前两行 __自动加载功能__ , 后两行 __框架运行__。其中 App构造函数支持全局参数设置。
+
+__控制器__：
+
+```php
+namespace app\modules\index\controllers;
+
+class Index
+{
+
+    public function init() {
+
+    }
+
+    /**
+     * 默认方法
+     */
+    public function indexAction() {
+
+    }
+}
+```
+
+在 __Xan__ 中，方法以 __Action__ 结尾，控制器首字母大写，并且不携带后缀: __Controller__。
+如果进行 __JSON__ 与 __XML__ 接口开发，请使用 __AOP__ 注解。
+
+## AOP 注解 ##
+
+```php
+namespace app\modules\index\controllers;
+
+/**
+ * @Aspect
+ */
+class Index
+{
+
+    /**
+     * @api(type=JSON,charset=GBK)
+     */
+    public function indexAction()
+    {
+        return [
+            'Xan' => 'Fast & Easy & Stack.',
+            'Version' => 'v0.1.9'
+        ];
+    }
+}
+```
+
+在 __Xan__ 中，只有框架调用的方法、路由才会解析注解完成 __AOP__ 特性的使用。  __Xan__ 注解分为 __类注解__ 与 __方法注解__ ，注解类都必须实现 __Xan\Type\Annotation\Annotation__ 接口，接口仅包含有一个方法 __input__ 方法，如下：
+
+```php
+namespace app\annotations;
+
+class TagAnnotation implements \Xan\Type\Annotation\Annotation
+{
+    public function input($objectOrName, $annotations) {
+        
+    }
+}
+```
+
+当 __Xan__ 解析到一个注解的时候会调用相应的注解类的 __input__ 方法完成注解使用，其中 第一个参数 __$objectOrName__ 在类注解的情况下为 当前的类名称，在方法注解下为当前的类对象。如：
+
+```php
+
+namespace app\moduels\index\controllers;
+
+/**
+ * @Aspect
+ * @app\annotations\TagAnnotation(version="v1.2.1", aop="Xan")
+ */
+class Index
+{
+    /**
+     * @LabelAnnotation(v = "V", t = "T")
+     */
+    public function indexAction() {
+        
+    }
+}
+
+
+namespace app\annotations;
+
+class TagAnnotation implements \Xan\Type\Annotation\Annotation
+{
+    public function input($objectOrName, $annotations) {
+        
+        // $objectOrName
+        echo $objectOrName;    // output: app\modules\index\controllers\Index;
+
+        // $annotations:
+        print_r($annotations); // output: [ 'version' => 'v1.2.1', 'aop' => 'Xan' ]
+    }
+}
+
+namespace app\annotations;
+
+class LabelAnnotation implements \Xan\Type\Annotation\Annotation
+{
+    public function input($objectOrName, $annotations) {
+        
+        // $objectOrName
+        var_dump($objectOrName); // output: new app\modules\index\controllers\Index();
+
+        // $annotations:
+        print_r($annotations);   // output: [ 'version' => 'v1.2.1', 'aop' => 'Xan' ]
+    }
+}
+```
+
+## SESSION ##
+
+__Xan__ 的 __SESSION__ 组件包装了系统的 `$_SESSION` 组件。 如：
+
+```php
+$session = new Xan\Session();
+
+// 设置值
+$session->set('hello.xan', 'world');
+等同于
+$session['hello.xan'] = 'world';
+
+// 获取值
+$session->get('hello.xan');
+等同于
+$session['hello.xan'];
+
+```
 
 ## 支持环境 ##
 
