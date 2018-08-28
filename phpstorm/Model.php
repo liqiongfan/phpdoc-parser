@@ -42,7 +42,7 @@ abstract class Model extends Adapter
     
     /**
      * Set the adapter with the adapter object
-     * @param $adapterKey       The adapter key owned by global IOC di container
+     * @param string $adapterKey       The adapter key owned by global IOC di container
      * @return mixed
      */
     final function setAdapter($adapterKey) {
