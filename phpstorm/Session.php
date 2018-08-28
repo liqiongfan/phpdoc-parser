@@ -23,6 +23,7 @@ namespace Xan;
  *      echo $session->get('xan.version');
  * or
  *      echo $session['xan.version'];
+ *
  * Also support iterator:
  *
  * foreach($session as $key => $value) {

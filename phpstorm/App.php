@@ -100,9 +100,10 @@ class App
      * }
      *
      * The Xan framework will run the method `__initView` `__initDi` `__initDb` `__initSession`
+     * @return App
      */
     final function bootstrap() {
-    
+        return $this;
     }
     
     /**

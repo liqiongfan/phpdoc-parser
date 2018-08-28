@@ -15,7 +15,7 @@
  */
 class Aspect implements Xan\Type\Annotation\Annotation
 {
-    public function input($classEntry, $annotations)
-    {
+    public function input($classEntry, $annotations) {
+    
     }
 }

@@ -9,11 +9,12 @@ namespace Xan\Type\Annotation;
  * used to add const variables to the given class not the object.
  * such as:
  *
- * <pre>
- *
  * @AttrAnnotation(name="hello")
  * class Abs
  * {
+ *     public function __construct() {
+ *
+ *     }
  * }
  *
  * @package Xan\Type\Annotation
