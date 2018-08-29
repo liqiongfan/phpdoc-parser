@@ -274,6 +274,26 @@ class LabelAnnotation implements \Xan\Type\Annotation\Annotation
 }
 ```
 
+__模型__
+
+__Xan__ 中模型必须继承于 __Xan\Db\Model__ 抽象类，并且实现方法： __tableName()__：
+
+```php
+namesapce app\models;
+
+class User extends \Xan\Db\Model {
+
+    public function tableName() {
+        return 'tb_user';
+    }
+
+    public function init() {
+        // 初始化工作
+
+    }
+}
+```
+
 ## SESSION ##
 
 __Xan__ 的 __SESSION__ 组件包装了系统的 `$_SESSION` 。 如：
