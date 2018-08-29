@@ -4,7 +4,7 @@ An extension for PHP document parsing. written in C code.
 
 Author：Josin <774542602@qq.com> | <a href="https://www.supjos.cn/archives/46.html#directory0065624643873947846">博客</a>
 
-**Xan是一款高性能的易于使用上手的PHP开发框架，颠覆了传统的配置模式，更新为注解机制，利用注解进行配置，便于优化代码、清晰逻辑；并且基于C语言开发，性能极高。**
+**Xan是一款高性能的易于使用上手的PHP开发框架，颠覆了传统的配置模式，利用注解进行配置，便于优化代码、清晰逻辑；并且基于C语言开发，性能极高。**
 
 #### 框架特点：
 
@@ -261,21 +261,73 @@ class LabelAnnotation implements \Xan\Type\Annotation\Annotation
 
 ## SESSION ##
 
-__Xan__ 的 __SESSION__ 组件包装了系统的 `$_SESSION` 组件。 如：
+__Xan__ 的 __SESSION__ 组件包装了系统的 `$_SESSION` 。 如：
 
 ```php
 $session = new Xan\Session();
 
 // 设置值
 $session->set('hello.xan', 'world');
-等同于
+ <==>
 $session['hello.xan'] = 'world';
 
 // 获取值
 $session->get('hello.xan');
-等同于
+ <==>
 $session['hello.xan'];
 
+```
+
+## $_GET|$_POST|$_SERVER ##
+
+__Xan\Request__ 封装了系统的 $_GET|$_POST|$_SERVER 超全局变量
+
+
+__$_GET：__
+
+```php
+$request = new Xan\Request();
+
+$data = $reqeust->get('data');
+
+// 也可以使用过滤器
+$data = $request->get('data', 'strtoupper');
+ <==>
+$data = $request->get('data', function($data){
+    return strtoupper($data);
+});
+
+// 也可以指定默认值
+$data = $request->get('data', 'strtoupper', 'Xan');
+
+```
+
+__$_POST：__
+
+```php
+$request = new Xan\Request();
+
+$data = $reqeust->getPost('data');
+
+// 也可以使用过滤器
+$data = $request->getPost('data', 'strtoupper');
+
+// 也可以指定默认值
+$data = $request->getPost('data', 'strtoupper', 'Xan');
+```
+
+__$_SERVER：__
+
+```php
+$request = new Xan\Request();
+
+$data = $reqeust->getServer('data');
+
+// 也可以使用过滤器
+$data = $request->getServer('data', 'strtoupper');
+
+// 也可以指定默认值
+$data = $request->getServer('data', 'strtoupper', 'Xan');
 ```
 
 ## 支持环境 ##
