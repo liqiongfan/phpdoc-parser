@@ -32,8 +32,8 @@ class A
     @NotNull(age)
     @Default(age=22, type = "Car")
     @Set("www.supjos.cn", email="774542602@qq.com")
-    void test()
-    {
+    void test() {
+
     }
 }
 ```
@@ -50,8 +50,8 @@ class A
      * @Default(age=22, sex="male")
      * @Set("www.supjos.cn", email="774542602@qq.com")
      */
-    function test()
-    {
+    function test() {
+
     }
 }
 ```
@@ -90,18 +90,15 @@ __重要概念：__
  */
 class Basic
 {
-    function before()
-    {
+    function before() {        
         echo 'before';
     }
     
-    function after($data)
-    {
+    function after($data) {
     	echo 'after =>' . $data;    
     }
     
-    function success()
-    {
+    function success() {
         echo 'success';
     }
  
@@ -118,8 +115,7 @@ class Basic
      * @after(value="Base.after", parameters="Xan Extension")
      * @success("Base.success")
      */
-    function test()
-    {
+    function test() {
         echo 'I\'m the test method for Aspect programming.';
         // 返回true，那么AOP执行 success通知，否则执行 failure 通知
         return true;
@@ -147,6 +143,25 @@ $base->test();
 ```
 
 前两行 __自动加载功能__ , 后两行 __框架运行__。其中 App构造函数支持全局参数设置。
+
+__App构造函数参数__：
+
+```php
+$config = array(
+    'urlPattern'        => 'AUTO',         // URL模式：auto、get、path-info
+    'defaultModule'     => 'index',        // 默认模块
+    'urlGetStr'         => '_xurl',        // GET模式的url键值
+    'defaultController' => 'index',        // 默认控制器
+    'defaultAction'     => 'index',        // 默认方法
+    'viewSuffix'        => 'html',         // 默认视图模板后缀
+    'urlSuffix'         => 'html',         // 默认的url后缀，显示指定的情况下，url后缀必传
+    'allowModules'      => 'index,home',   // 允许的所有模块，多个模块以逗号分开
+    'applicationDir'    => './../apps',    // 应用目录
+    'defaultNamespace'  => 'app'           // 应用目录对应的引用空间别名
+ );
+
+$app = new Xan\App($config);
+```
 
 __控制器__：
 
