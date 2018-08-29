@@ -283,7 +283,7 @@ $session['hello.xan'];
 __Xan\Request__ 封装了系统的 $_GET|$_POST|$_SERVER 超全局变量
 
 
-__$_GET：__
+__ $_GET： __
 
 ```php
 $request = new Xan\Request();
@@ -302,7 +302,7 @@ $data = $request->get('data', 'strtoupper', 'Xan');
 
 ```
 
-__$_POST：__
+__ $_POST： __
 
 ```php
 $request = new Xan\Request();
@@ -316,7 +316,7 @@ $data = $request->getPost('data', 'strtoupper');
 $data = $request->getPost('data', 'strtoupper', 'Xan');
 ```
 
-__$_SERVER：__
+__ $_SERVER： __
 
 ```php
 $request = new Xan\Request();
