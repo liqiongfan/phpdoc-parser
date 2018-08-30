@@ -139,17 +139,19 @@ XAN_METHOD(App, __construct)
     }
 
     /* Parsing the defaultNamespace */
+    if (ZVAL_IS_NULL(&XAN_G(aliases))) {
+        array_init(&XAN_G(aliases));
+    }
+
     zval *default_namespace = STRING_FIND_P(options, "defaultNamespace");
     if ( default_namespace && !ZVAL_IS_NULL(default_namespace) && (Z_TYPE_P(default_namespace) == IS_STRING) ) {
         if (Z_STRVAL_P(default_namespace)[0] != '\0') {
             ZVAL_STR(&XAN_G(default_namespace), zend_string_tolower(Z_STR_P(default_namespace)));
         }
 
-        if (ZVAL_IS_NULL(&XAN_G(aliases))) {
-            array_init(&XAN_G(aliases));
-        }
-
         add_assoc_string(&XAN_G(aliases), Z_STRVAL_P(default_namespace), Z_STRVAL(XAN_G(application_dir)) );
+    } else {
+        add_assoc_string(&XAN_G(aliases), Z_STRVAL(XAN_G(default_namespace)), Z_STRVAL(XAN_G(application_dir)) );
     }
 
     /* Parsing the defaultController */
