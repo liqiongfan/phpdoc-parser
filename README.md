@@ -306,12 +306,21 @@ $session->set('hello.xan', 'world');
  <==>
 $session['hello.xan'] = 'world';
 
+// 设置的结果就是：
+$session = [
+    'hello' => [
+        'xan' => 'world'
+    ]
+];
+
 // 获取值
 $session->get('hello.xan');
  <==>
 $session['hello.xan'];
 
 ```
+
+__多维的SESSION采用“ __.__ ”进行获取对应的数据。
 
 ## $_GET|$_POST|$_SERVER ##
 
