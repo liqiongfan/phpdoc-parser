@@ -1,4 +1,4 @@
-# Xan 高性能的PHP扩展框架
+# Xan 高性能的PHP扩展AOP框架
 
 An extension for PHP document parsing. written in C code.
 
@@ -324,7 +324,7 @@ $session['hello']['xan'];
 
 __Xan__ 中SESSION组件可以采用多维数组的方式访问元素内容，但不可以使用多维数组的方式进行修改，因此为了保持一致，推荐采用内置的“.”语言进行设置与访问。
 
-__多维的SESSION采用“ __.__ ”进行获取对应的数据。
+多维的SESSION采用“ __.__ ”进行获取对应的数据。
 
 ## $_GET|$_POST|$_SERVER ##
 
