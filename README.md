@@ -6,6 +6,8 @@ Author：Josin <774542602@qq.com> | <a href="https://www.supjos.cn/archives/46.h
 
 **Xan是一款高性能的易于使用上手的PHP开发框架，颠覆了传统的配置模式，利用注解进行配置，便于优化代码、清晰逻辑；并且基于C语言开发，性能极高。**
 
+**基于Zend OPCode的AOP特性正在开发中，完全不需要代理的AOP模式，值得拥有！**
+
 #### 框架特点：
 
 ​    **1、PSR自动加载**
@@ -134,7 +136,6 @@ $base->test();
 ## WEB示例 ##
 
 ```php
-    
     $loader = new Xan\Loader();
     $loader->setMap('@app', __DIR__);
 
@@ -317,8 +318,11 @@ $session = [
 $session->get('hello.xan');
  <==>
 $session['hello.xan'];
-
+ <==>
+$session['hello']['xan'];
 ```
+
+__Xan__ 中SESSION组件可以采用多维数组的方式访问元素内容，但不可以使用多维数组的方式进行修改，因此为了保持一致，推荐采用内置的“.”语言进行设置与访问。
 
 __多维的SESSION采用“ __.__ ”进行获取对应的数据。
 
