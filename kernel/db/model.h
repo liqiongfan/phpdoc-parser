@@ -38,7 +38,7 @@
 #define PDO_INS_FIELD   "_pdo_insert_fields"
 #define PDO_INS_DATA    "_pdo_insert_data"
 #define PDO_UPD_SET     "_pdo_update_data"
-#define PDO_ROWS_COUNT  "_pdo_rows_count"
+/* #define PDO_ROWS_COUNT  "_pdo_rows_count" */
 
 /**
  * ALL ActiveRecord TYPE
@@ -49,6 +49,9 @@ enum {
     UPDATE,
     DELETE
 };
+
+void call_method_with_object_zval( zval *object, char *method_name, zval *parameters, zval *ret_val );
+void call_method_with_object_array(zval *object, char *method_name, uint32_t param_counts, zval params[], zval *ret_val);
 
 /* Exeucte the SQL */
 void xan_execute_sql(zval *model_object, zend_string *sql, zval *bind_values, zval *ret_val, zval *retval);

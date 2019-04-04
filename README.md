@@ -1,6 +1,6 @@
-# Xan 高性能的PHP扩展AOP框架
+# Xan Db模型扩展
 
-An extension for PHP document parsing. written in C code.
+An extension for PHP Db parsing. written in C code.
 
 Author：Josin <774542602@qq.com> | <a href="https://www.supjos.cn/archives/46.html#directory0065624643873947846">博客</a>
 

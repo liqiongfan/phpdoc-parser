@@ -26,15 +26,15 @@
 #include "php_ini.h"
 #include "main/SAPI.h"
 #include "php_xannotation.h"
-#include "kernel/xan_class.h"
 #include "kernel/db/adapter.h"
 #include "ext/json/php_json.h"
 #include "ext/standard/info.h"
 #include "Zend/zend_smart_str.h"
-#include "kernel/loader/loader.h"
 #include "ext/pdo/php_pdo_driver.h"
 #include "ext/standard/php_string.h"
 #include "Zend/zend_exceptions.h"
+
+#include <stdlib.h>
 
 /**
  * {{{
@@ -142,7 +142,7 @@ XAN_METHOD(Adapter, createQueryCommand)
  */
 XAN_METHOD(Adapter, execute)
 {
-    zval *bind_data = NULL, *pdo_state_obj, retval;
+    zval *bind_data = NULL, *pdo_state_obj, retval, rows;
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|a", &bind_data) == FAILURE) {
         return ;
     }
@@ -153,7 +153,11 @@ XAN_METHOD(Adapter, execute)
 
     xan_pdo_execute(pdo_state_obj, bind_data, &retval);
     xan_check_pdo_error(NULL, pdo_state_obj);
-    ZVAL_COPY(return_value, getThis());
+    
+    xan_pdo_row_count(pdo_state_obj, &rows);
+    zend_update_property(XAN_ENTRY_OBJ(getThis()), XAN_STRL(PDO_ROWS_COUNT), &rows);
+
+    ZVAL_COPY(return_value, &retval);
 }/*}}}*/
 
 /**
@@ -162,7 +166,7 @@ XAN_METHOD(Adapter, execute)
  */
 XAN_METHOD(Adapter, execCommand)
 {
-    zval *pdo_object;
+    zval *pdo_object, rows;
     zend_string *exec_sql;
     if (zend_parse_parameters( ZEND_NUM_ARGS() TSRMLS_CC, "S", &exec_sql) == FAILURE ) {
         return ;
@@ -174,12 +178,10 @@ XAN_METHOD(Adapter, execCommand)
 
     pdo_object = zend_read_property(XAN_ENTRY_OBJ(getThis()), XAN_STRL(PDO_OBJECT), 1, NULL);
     if ( pdo_object == NULL ) {
-        if ( pdo_object == NULL ) {
-            if ( ZVAL_IS_NULL(&XAN_G(pdo_object)) ) {
-                XAN_INFO(E_ERROR, "Please construct the Adapter class first!");
-            }
-            ZVAL_COPY(pdo_object, &XAN_G(pdo_object));
+        if ( ZVAL_IS_NULL(&XAN_G(pdo_object)) ) {
+            XAN_INFO(E_ERROR, "Please construct the Adapter class first!");
         }
+        ZVAL_COPY(pdo_object, &XAN_G(pdo_object));
     }
     xan_pdo_exec(pdo_object, ZSTR_VAL(exec_sql), return_value);
 
@@ -351,6 +353,7 @@ XAN_INIT(adapter)
     XAN_PR_NULL(xan_adapter_ce, PDO_OBJECT, ZEND_ACC_PROTECTED);
     XAN_PR_NULL(xan_adapter_ce, PDO_BIND_DATA, ZEND_ACC_PROTECTED);
     XAN_PR_NULL(xan_adapter_ce, PDO_STATEMENT_OBJ, ZEND_ACC_PROTECTED);
+    XAN_PR_LONG(xan_adapter_ce, PDO_ROWS_COUNT, 0, ZEND_ACC_PROTECTED);
 
 }/*}}}*/
 
@@ -578,8 +581,8 @@ zend_bool xan_check_pdo_error(zval *pdo_object, zval *pdostatement_obj)
     zval *error_info    = INDEX_FIND(errorinfo, 2);
 
     if ( !zend_string_equals_literal(Z_STR_P(sqlstate_code), "00000") ) {
-        zend_string *error_msg = strpprintf(0, "[ SQLSTATE:%s; ERRORINFO: %s ]\n", Z_STRVAL_P(sqlstate_code), Z_STRVAL_P(error_info));
-        zend_throw_exception( NULL, ZSTR_VAL(error_msg), 303 );
+        /* zend_string *error_msg = strpprintf(0, "[ SQLSTATE:%s; ERRORINFO: %s ]\n", Z_STRVAL_P(sqlstate_code), Z_STRVAL_P(error_info)); */
+        zend_throw_exception( NULL, Z_STRVAL_P(error_info), strtoll(Z_STRVAL_P(sqlstate_code), NULL, 10) );
         return 0;
     } else {
         return 1;

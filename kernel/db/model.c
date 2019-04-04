@@ -24,16 +24,12 @@
 
 #include "php.h"
 #include "php_ini.h"
-#include "kernel/app/app.h"
 #include "kernel/app/net.h"
 #include "php_xannotation.h"
 #include "zend_smart_str.h"
 #include "kernel/db/model.h"
 #include "ext/standard/info.h"
 #include "kernel/db/adapter.h"
-#include "kernel/app/dispatch.h"
-#include "kernel/loader/loader.h"
-#include "kernel/class/aop/proxy.h"
 #include "Zend/zend_inheritance.h"
 #include "ext/standard/php_string.h"
 
@@ -67,6 +63,10 @@ ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(ARGINFO(xan_model_having), 0, 0, 1)
     ZEND_ARG_INFO(0, having)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(ARGINFO(xan_model_isset), 0, 0, 1)
+    ZEND_ARG_INFO(0, name)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(ARGINFO(xan_model_order_by), 0, 0, 1)
@@ -239,9 +239,11 @@ XAN_METHOD(Model, fields)
             XAN_INFO(E_ERROR, "Parameters only accept array or string value!");
             break;
     }
-    smart_str_0(&sql);
-    zend_update_property_str( XAN_ENTRY_OBJ(getThis()), XAN_STRL(PDO_SQL_FIELDS), sql.s );
-    smart_str_free(&sql);
+    if ( sql.s ) {
+        smart_str_0(&sql);
+        zend_update_property_str( XAN_ENTRY_OBJ(getThis()), XAN_STRL(PDO_SQL_FIELDS), sql.s );
+        smart_str_free(&sql);
+    }
     ZVAL_COPY(return_value, getThis());
 }/*}}}*/
 
@@ -278,11 +280,12 @@ XAN_METHOD(Model, where)
         default:
             break;
     }
-    smart_str_0(&where_str);
-    zend_update_property_str(XAN_ENTRY_OBJ(getThis()), XAN_STRL(PDO_SQL_WHERE), where_str.s);
-    smart_str_free(&where_str);
+    if ( where_str.s ) {
+        smart_str_0(&where_str);
+        zend_update_property_str(XAN_ENTRY_OBJ(getThis()), XAN_STRL(PDO_SQL_WHERE), where_str.s );
+        smart_str_free(&where_str);
+    }
     ZVAL_COPY(return_value, getThis());
-
 }/*}}}*/
 
 /**
@@ -311,9 +314,11 @@ XAN_METHOD(Model, groupBy)
             XAN_INFO(E_ERROR, "Parameters only accept array or string value!");
             break;
     }
-    smart_str_0(&groupby);
-    zend_update_property_str( XAN_ENTRY_OBJ(getThis()), XAN_STRL(PDO_SQL_GROUPBY), groupby.s );
-    smart_str_free(&groupby);
+    if ( groupby.s ){
+        smart_str_0(&groupby);
+        zend_update_property_str( XAN_ENTRY_OBJ(getThis()), XAN_STRL(PDO_SQL_GROUPBY), groupby.s );
+        smart_str_free(&groupby);
+    }
     ZVAL_COPY(return_value, getThis());
 }/*}}}*/
 
@@ -343,9 +348,11 @@ XAN_METHOD(Model, orderBy)
             XAN_INFO(E_ERROR, "Parameters only accept array or string value!");
             break;
     }
-    smart_str_0(&orderby);
-    zend_update_property_str( XAN_ENTRY_OBJ(getThis()), XAN_STRL(PDO_SQL_ORDERBY), orderby.s );
-    smart_str_free(&orderby);
+    if ( orderby.s ){
+        smart_str_0(&orderby);
+        zend_update_property_str( XAN_ENTRY_OBJ(getThis()), XAN_STRL(PDO_SQL_ORDERBY), orderby.s );
+        smart_str_free(&orderby);
+    }
     ZVAL_COPY(return_value, getThis());
 }/*}}}*/
 
@@ -370,8 +377,38 @@ XAN_METHOD(Model, __get)
     }
 
     ZVAL_STR(&member, key);
-    Z_OBJ_HT_P(getThis())->read_property(getThis(), &member, 1, NULL, return_value);
+    return_value = Z_OBJ_HT_P(getThis())->read_property(getThis(), &member, 1, NULL, return_value);
     zval_ptr_dtor(&member);
+}/*}}}*/
+
+/**
+ * {{{
+ * proto Model::__isset($key)
+ */
+XAN_METHOD(Model, __isset)
+{
+    zval member;
+    zend_string *key;
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "S", &key) == FAILURE) {
+        return ;
+    }
+
+    zval *model_datas = zend_read_property(XAN_ENTRY_OBJ(getThis()), XAN_STRL(PDO_MODEL_DATA), 1, NULL);
+    if ( model_datas ) {
+        zval *value = STR_FIND_P(model_datas, key);
+        if ( value ) {
+            RETURN_TRUE
+        }
+    }
+
+    ZVAL_STR(&member, key);
+    return_value = Z_OBJ_HT_P(getThis())->read_property(getThis(), &member, 1, NULL, return_value);
+    zval_ptr_dtor(&member);
+    if (return_value) { 
+        RETURN_TRUE; 
+    } else { 
+        RETURN_FALSE 
+    }
 }/*}}}*/
 
 /**
@@ -402,6 +439,8 @@ again:
                             if (!model_datas || ZVAL_IS_NULL(model_datas)) {
                                 array_init(model_datas);
                             }
+                            if ( Z_TYPE_P(value) != IS_LONG || Z_TYPE_P(value) != IS_DOUBLE)
+                                zval_add_ref(value);
                             add_assoc_zval(model_datas, ZSTR_VAL(key), value);
                         }
                     }
@@ -453,9 +492,11 @@ XAN_METHOD(Model, limit)
         RETURN_ZVAL(getThis(), 1, NULL);
     }
 
-    smart_str_0(&limit_str);
-    zend_update_property_str( XAN_ENTRY_OBJ(getThis()), XAN_STRL(PDO_SQL_LIMIT), limit_str.s );
-    smart_str_free(&limit_str);
+    if ( limit_str.s ){
+        smart_str_0(&limit_str);
+        zend_update_property_str( XAN_ENTRY_OBJ(getThis()), XAN_STRL(PDO_SQL_LIMIT), limit_str.s );
+        smart_str_free(&limit_str);
+    }
     ZVAL_COPY(return_value, getThis());
 }/*}}}*/
 
@@ -465,7 +506,7 @@ XAN_METHOD(Model, limit)
  */
 XAN_METHOD(Model, all)
 {
-    zval *bind_values = NULL, retval, temp_obj;
+    zval *bind_values = NULL, retval;
 
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|a", &bind_values) == FAILURE) {
         return ;
@@ -486,13 +527,22 @@ XAN_METHOD(Model, all)
     zval *pdo_object = zend_read_property(XAN_ENTRY_OBJ(getThis()), XAN_STRL(PDO_OBJECT), 1, NULL);
     if ( pdo_object == NULL ) RETURN_NULL()
     xan_get_table_fields(getThis(), pdo_object, NULL);
+    if (EG(exception)) {
+        RETURN_NULL()
+    }
 
     zval *as_array = zend_read_property(XAN_ENTRY_OBJ(getThis()), XAN_STRL(PDO_MODEL_ARRAY), 1, NULL);
 
     xan_pdo_prepare( pdo_object, ZSTR_VAL(select_sql), return_value);
     xan_check_pdo_error(pdo_object, NULL);
+    if (EG(exception)) {
+        RETURN_NULL()
+    }
     xan_pdo_execute(return_value, bind_values, &retval);
     xan_check_pdo_error(NULL, return_value);
+    if (EG(exception)) {
+        RETURN_NULL()
+    }
     xan_pdo_fetch_all(return_value, &retval);
 
     zend_update_property_str(XAN_ENTRY_OBJ(getThis()), XAN_STRL(PDO_EXECUTE_SQL), select_sql);
@@ -507,8 +557,12 @@ XAN_METHOD(Model, all)
         /* Array of the return value */
         array_init(return_value);
         ZEND_HASH_FOREACH_VAL(Z_ARRVAL(retval), bind_values) {
-            zend_object *obj = zend_objects_clone_obj(getThis());
-            ZVAL_OBJ(&temp_obj, obj);
+            
+            zval temp_obj;
+            object_init(&temp_obj);
+            // zend_object *obj = zend_objects_clone_obj(getThis());
+            // ZVAL_OBJ(&temp_obj, obj);
+            // zval_add_ref(bind_values);
             zend_merge_properties(&temp_obj, Z_ARRVAL_P(bind_values));
             add_next_index_zval(return_value, &temp_obj);
         } ZEND_HASH_FOREACH_END();
@@ -545,13 +599,22 @@ XAN_METHOD(Model, one)
     if ( pdo_object == NULL ) RETURN_NULL()
 
     xan_get_table_fields(getThis(), pdo_object, NULL);
+    if (EG(exception)) {
+        RETURN_NULL()
+    }
 
     zval *as_array = zend_read_property(XAN_ENTRY_OBJ(getThis()), XAN_STRL(PDO_MODEL_ARRAY), 1, NULL);
 
     xan_pdo_prepare( pdo_object, ZSTR_VAL(select_sql), return_value);
     xan_check_pdo_error(pdo_object, NULL);
+    if (EG(exception)) {
+        RETURN_NULL()
+    }
     xan_pdo_execute(return_value, bind_values, &retval);
     xan_check_pdo_error(NULL, return_value);
+    if (EG(exception)) {
+        RETURN_NULL()
+    }
     xan_pdo_fetch(return_value, &retval);
     zend_update_property_str(XAN_ENTRY_OBJ(getThis()), XAN_STRL(PDO_EXECUTE_SQL), select_sql);
     if ( as_array && Z_LVAL_P(as_array) ) {
@@ -632,7 +695,7 @@ XAN_METHOD(Model, save)
     zval *model_data = zend_read_property(XAN_ENTRY_OBJ(getThis()), XAN_STRL(PDO_MODEL_DATA), 1, NULL);
     if ( model_data && !ZVAL_IS_NULL(model_data) && Z_TYPE_P(model_data) == IS_ARRAY && Z_H_N_E(Z_ARRVAL_P(model_data)) ) {
         if ( datas ) {
-            zend_hash_merge(Z_ARRVAL_P(model_data), Z_ARRVAL_P(datas), (copy_ctor_func_t) zval_add_ref, 0);
+            zend_hash_merge(Z_ARRVAL_P(model_data), Z_ARRVAL_P(datas), (copy_ctor_func_t) zval_add_ref, 1);
         }
         combine_array_insert_data(model_data, &fields, &values);
     } else {
@@ -649,7 +712,6 @@ XAN_METHOD(Model, save)
     smart_str_free(&values);
 
     zend_string *insert_sql = combine_all_sql(getThis(), INSERT);
-
     xan_execute_sql(getThis(), insert_sql, bind_values, return_value, &retval);
 }/*}}}*/
 
@@ -724,9 +786,11 @@ XAN_METHOD(Model, having)
         default:
             break;
     }
-    smart_str_0(&having_str);
-    zend_update_property_str(XAN_ENTRY_OBJ(getThis()), XAN_STRL(PDO_SQL_HAVING), having_str.s);
-    smart_str_free(&having_str);
+    if ( having_str.s ){
+        smart_str_0(&having_str);
+        zend_update_property_str(XAN_ENTRY_OBJ(getThis()), XAN_STRL(PDO_SQL_HAVING), having_str.s);
+        smart_str_free(&having_str);
+    }
     ZVAL_COPY(return_value, getThis());
 
 }/*}}}*/
@@ -740,7 +804,7 @@ XAN_METHOD(Model, asArray)
     if (zend_parse_parameters_none() == FAILURE ) {
         return ;
     }
-    zend_update_property_bool(XAN_ENTRY_OBJ(getThis()), XAN_STRL(PDO_MODEL_ARRAY), 1);
+    zend_update_property_long(XAN_ENTRY_OBJ(getThis()), XAN_STRL(PDO_MODEL_ARRAY), 1);
     ZVAL_COPY(return_value, getThis());
 }/*}}}*/
 
@@ -797,6 +861,7 @@ XAN_FUNCTIONS(model)
     XAN_ME(Model, orderBy, arginfo_xan_model_order_by, ZEND_ACC_PUBLIC | ZEND_ACC_FINAL)
     XAN_ME(Model, __set, arginfo_xan_model_set, ZEND_ACC_PUBLIC | ZEND_ACC_FINAL)
     XAN_ME(Model, __get, arginfo_xan_model_get, ZEND_ACC_PUBLIC | ZEND_ACC_FINAL)
+    XAN_ME(Model, __isset, arginfo_xan_model_isset, ZEND_ACC_PUBLIC | ZEND_ACC_FINAL)
     XAN_ME(Model, getExecutedSql, arginfo_xan_model_get_executed_sql, ZEND_ACC_PUBLIC | ZEND_ACC_FINAL)
     XAN_ME(Model, limit, arginfo_xan_model_limit, ZEND_ACC_PUBLIC | ZEND_ACC_FINAL)
     XAN_ME(Model, asArray, arginfo_xan_model_as_array, ZEND_ACC_PUBLIC | ZEND_ACC_FINAL)
@@ -832,7 +897,7 @@ XAN_INIT(model)
     XAN_PR_ESTRING(xan_model_ce, PDO_SQL_HAVING, ZEND_ACC_PROTECTED);
     XAN_PR_ESTRING(xan_model_ce, PDO_EXECUTE_SQL, ZEND_ACC_PROTECTED);
     XAN_PR_ESTRING(xan_model_ce, PDO_SQL_LIMIT, ZEND_ACC_PROTECTED);
-       XAN_PR_LONG(xan_model_ce, PDO_ROWS_COUNT, 0, ZEND_ACC_PROTECTED);
+       /* XAN_PR_LONG(xan_model_ce, PDO_ROWS_COUNT, 0, ZEND_ACC_PROTECTED); */
        XAN_PR_LONG(xan_model_ce, PDO_MODEL_ARRAY, 0, ZEND_ACC_PROTECTED);
        XAN_PR_NULL(xan_model_ce, PDO_BIND_VALUE, ZEND_ACC_PROTECTED);
        XAN_PR_NULL(xan_model_ce, PDO_TABLEFIELDS, ZEND_ACC_PROTECTED);
@@ -859,13 +924,13 @@ void xan_execute_sql(zval *model_object, zend_string *sql, zval *bind_values, zv
     xan_pdo_prepare(pdo_object, ZSTR_VAL(sql), ret_val);
 
     /* Check wheather the prepare occured the error. */
-    xan_check_pdo_error(pdo_object, NULL);
+    if (!xan_check_pdo_error(pdo_object, NULL)) return ;
 
     /* Execute the prepared SQL with the given binding values */
     xan_pdo_execute(ret_val, bind_values, retval);
 
     /* Check wheather the error info occured when executing */
-    xan_check_pdo_error(pdo_object, ret_val);
+    if (!xan_check_pdo_error(pdo_object, ret_val)) return ;
 
     /* Save the affected rows */
     xan_pdo_row_count(ret_val, &rows);
@@ -906,8 +971,14 @@ void xan_get_table_fields(zval *object, zval *pdo_object, zval *table_name)
 
     xan_pdo_prepare(&pobject, ZSTR_VAL(colums), &pdo_state_obj);
     xan_check_pdo_error(&pobject, NULL);
+    if (EG(exception)) {
+        return ;
+    }
     xan_pdo_execute(&pdo_state_obj, NULL, &retval );
     xan_check_pdo_error(NULL, &pdo_state_obj);
+    if (EG(exception)) {
+        return ;
+    }
     xan_pdo_fetch_all(&pdo_state_obj, &retval);
 
     ZEND_HASH_FOREACH_VAL(Z_ARRVAL(retval), each_field) {
@@ -966,14 +1037,14 @@ void combine_array_insert_data(zval *data, smart_str *fields, smart_str *values)
                 case IS_OBJECT:
                     convert_to_string(value);
                 case IS_STRING:
-                    if ( Z_STRVAL_P(value)[0] == ':' ) {
+                    if ( Z_STRVAL_P(value)[0] == ':' || Z_STRVAL_P(value)[0] == '?' ) {
                         quote = 0;
                     } else {
                         quote = 1;
                     }
                     if ( quote )
                         smart_str_appendc(values, '\'');
-                    smart_str_appends(values, ZSTR_VAL(php_addslashes(Z_STR_P(value), 1)) );
+                    smart_str_append(values, php_addslashes(Z_STR_P(value), 1) );
                     if ( quote )
                         smart_str_appendc(values, '\'');
                     break;
@@ -1049,7 +1120,7 @@ void combine_array_fields(zval *fields, smart_str *str)
                     if ( !quote ) {
                         smart_str_appendc(str, '`');
                     }
-                    smart_str_appends(str, " AS `");
+                    smart_str_appends(str, " AS ");
                     switch (Z_TYPE(bucket->val)) {
                         case IS_STRING:
                             smart_str_appends(str, Z_STRVAL(bucket->val));
@@ -1061,7 +1132,6 @@ void combine_array_fields(zval *fields, smart_str *str)
                             smart_str_appends(str, ZSTR_VAL(strpprintf(0, "%f", Z_DVAL(bucket->val))));
                             break;
                     }
-                    smart_str_appendc(str, '`');
                 }
             }
 
@@ -1204,11 +1274,11 @@ void combine_array_where(zval *where, smart_str *str, zend_string *ikey, int inn
 
                 switch (Z_TYPE(bucket->val)) {
                     case IS_STRING:
-                        if ( Z_STRVAL(bucket->val)[0] != ':' ) {
+                        if ( Z_STRVAL(bucket->val)[0] != ':' && Z_STRVAL(bucket->val)[0] != '?' ) {
                             smart_str_appendc(str, '\'');
                         }
                         smart_str_appends(str, ZSTR_VAL(php_addslashes(Z_STR(bucket->val), 1)) );
-                        if ( Z_STRVAL(bucket->val)[0] != ':' ) {
+                        if ( Z_STRVAL(bucket->val)[0] != ':' && Z_STRVAL(bucket->val)[0] != '?' ) {
                             smart_str_appendc(str, '\'');
                         }
                         break;
@@ -1248,7 +1318,7 @@ void combine_array_where(zval *where, smart_str *str, zend_string *ikey, int inn
 
         } ZEND_HASH_FOREACH_END();
 
-        if ( ZSTR_LEN(str->s) > 1 ) {
+        if ( str->s && ZSTR_LEN(str->s) > 1 ) {
             if ( ZSTR_VAL(str->s)[ZSTR_LEN(str->s) - 1] == ' ' ) {
                 ZSTR_VAL(str->s)[ZSTR_LEN(str->s) - 1] = '\0';
             }
@@ -1274,6 +1344,15 @@ void combine_array_group_orderby(zval *by_condition, smart_str *str, int groupby
         ZEND_HASH_FOREACH_BUCKET(Z_ARRVAL_P(by_condition), bucket) {
 
             if ( !bucket->key ) {
+                if ( !groupby ) {
+                    smart_str_appends(str, Z_STRVAL(bucket->val));
+                    smart_str_appendc(str, ' ');
+                    smart_str_appends(str, "DESC");
+                    smart_str_appendc(str, ',');
+                } else if ( groupby ) {
+                    smart_str_appends(str, Z_STRVAL(bucket->val));
+                    smart_str_appendc(str, ',');
+                }
                 continue;
             }
 
@@ -1293,9 +1372,10 @@ void combine_array_group_orderby(zval *by_condition, smart_str *str, int groupby
             smart_str_appendc(str, ' ');
             smart_str_appends(str, ZSTR_VAL(php_string_toupper(Z_STR(bucket->val))));
             smart_str_appendc(str, ',');
+
         } ZEND_HASH_FOREACH_END();
 
-        if ( ZSTR_LEN(str->s) ) {
+        if ( str->s && ZSTR_LEN(str->s) ) {
             if ( ZSTR_VAL(str->s)[ZSTR_LEN(str->s) - 1] == ',' ) {
                 ZSTR_VAL(str->s)[ZSTR_LEN(str->s) - 1] = '\0';
             }
@@ -1382,6 +1462,51 @@ zend_string *combine_all_sql(zval *object, int type)
 
     return result_sql;
 }/*}}}*/
+
+/**
+ * {{{
+ * The following two function was used to call the function with the given parameters
+ */
+void call_method_with_object_array(zval *object, char *method_name, uint32_t param_counts, zval params[], zval *ret_val)
+{
+    if (XAN_CHECK_METHOD(object, method_name) != NULL) {
+        zval function_name;
+        ZVAL_STRING(&function_name, method_name);
+        zend_try {
+            call_user_function( NULL, object, &function_name, ret_val, param_counts, params );
+        } zend_catch {
+            if (EG(exception)) zend_exception_error(EG(exception), E_ERROR);
+        } zend_end_try();
+        zval_ptr_dtor(&function_name);
+    }
+}/*}}}*/
+
+/**
+ * {{{
+ * call_method_with_object_zval
+ * was used to call the function with some params which passed by php-array, not C array;
+ */
+void call_method_with_object_zval( zval *object, char *method_name, zval *parameters TSRMLS_CC, zval *ret_val )
+{
+    uint32_t p_counts = !parameters ? 0 : zend_hash_num_elements(Z_ARRVAL_P(parameters));
+    if ( p_counts )  {
+        uint32_t n = 0;
+        zval *val_para;
+
+        zval *params = (zval *)emalloc(sizeof(zval) * p_counts );
+        ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(parameters), val_para) {
+            ZVAL_COPY(&params[n], val_para);
+            n++;
+        } ZEND_HASH_FOREACH_END();
+        
+        call_method_with_object_array( object, method_name, p_counts, params, ret_val );
+
+        efree(params);
+    } else {
+        call_method_with_object_array(object, method_name, 0, NULL, ret_val);
+    }
+}
+/*}}}*/
 
 /*
  * Local variables:

@@ -1,6 +1,6 @@
 <?php
 
-namespace Xan;
+namespace Xan\Db;
 
 use Xan\Db\Adapter;
 
@@ -210,6 +210,7 @@ abstract class Model extends Adapter
      * @param array         $data
      * @param array         $bindValues
      * @param array|string  $where
+     * @return bool <b>TRUE</b> on success or <b>FALSE</b> on failure.
      */
     function update($data = [], $bindValues = [], $where) {
     
@@ -219,6 +220,7 @@ abstract class Model extends Adapter
      * INSERT INTO the DB engine.
      * @param array $data
      * @param array $bindValues
+     * @return bool <b>TRUE</b> on success or <b>FALSE</b> on failure.
      */
     function save($data = [], $bindValues = []) {
     
@@ -228,6 +230,7 @@ abstract class Model extends Adapter
      * DELETE command
      * @param array|string  $where
      * @param array         $bindValues
+     * @return bool <b>TRUE</b> on success or <b>FALSE</b> on failure.
      */
     function delete($where, $bindValues = []) {
     

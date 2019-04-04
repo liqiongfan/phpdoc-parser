@@ -28,25 +28,13 @@
 #include "kernel/app/net.h"
 #include "php_xannotation.h"
 #include "ext/standard/info.h"
-#include "kernel/app/dispatch.h"
 #include "kernel/app/response.h"
-#include "kernel/class/aop/proxy.h"
 #include "ext/standard/php_string.h"
 
 /**
  * {{{ ARGINFO
  */
 ZEND_BEGIN_ARG_INFO_EX(ARGINFO(xan_response_construct), 0, 0, 0)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(ARGINFO(xan_response_forward), 0, 0, 1)
-    ZEND_ARG_INFO(0, url)
-    ZEND_ARG_INFO(0, getParams)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(ARGINFO(xan_response_redirect), 0, 0, 1)
-    ZEND_ARG_INFO(0, url)
-    ZEND_ARG_INFO(0, getParams)
 ZEND_END_ARG_INFO()
 
 /*}}}*/
@@ -61,177 +49,10 @@ XAN_METHOD(Response, __construct)
 }/*}}}*/
 
 /**
- * {{{
- * proto Response::forward($url, $getParams = [])
- */
-XAN_METHOD(Response, forward)
-{
-    int root_url = 0;
-    zend_string *url, *key;
-    zval *get_params = NULL, *value;
-
-    if ( zend_parse_parameters( ZEND_NUM_ARGS() TSRMLS_CC, "S|a", &url, &get_params) == FAILURE) {
-        return ;
-    }
-
-    if ( !ZSTR_LEN(url) ) {
-        return ;
-    }
-
-    if ( ZSTR_VAL(url)[0] == '/' ) {
-        root_url = 1;
-    }
-
-    /* Make sure the url are right */
-    array_init(return_value);
-    key = php_trim( url, XAN_STRL("/"), 3 );
-    php_explode( strpprintf(0, "%s", "/"), key, return_value, ZEND_LONG_MAX );
-    if ( Z_H_N_E(Z_ARRVAL_P(return_value)) == 1 ) {
-        
-        Z_STRVAL(XAN_G(default_controller))[0] = tolower( Z_STRVAL(XAN_G(default_controller))[0] );
-        
-        /* Only one element & in root mode */
-        if ( root_url ) {
-            url = strpprintf( 0, "%s/%s/%s", ZSTR_VAL(url), Z_STRVAL(XAN_G(default_controller)), Z_STRVAL(XAN_G(default_action)) );
-        } else {
-            url = strpprintf( 0, "%s/%s/%s", Z_STRVAL(XAN_G(default_module)), Z_STRVAL(XAN_G(default_controller)), ZSTR_VAL(url) );
-        }
-
-        Z_STRVAL(XAN_G(default_controller))[0] = toupper( Z_STRVAL(XAN_G(default_controller))[0] );
-
-    } else if ( Z_H_N_E(Z_ARRVAL_P(return_value)) == 2 ) {
-        /* Only two element & in root mode */
-        if ( root_url ) {
-            url = strpprintf( 0, "%s/%s", ZSTR_VAL(url), Z_STRVAL(XAN_G(default_action)) );
-        } else {
-            url = strpprintf( 0, "%s/%s", Z_STRVAL(XAN_G(default_module)), ZSTR_VAL(url) );
-        }
-    }
-
-    /* After parsing the url into the right form */
-    if ( get_params && zend_hash_num_elements( Z_ARRVAL_P(get_params)) ) {
-        
-        ZVAL_STRING(return_value, "");
-        ZEND_HASH_FOREACH_STR_KEY_VAL( Z_ARRVAL_P(get_params), key, value ) {
-            
-            if ( !ZSTR_LEN(key) ) continue;
-            convert_to_string(value);
-            ZVAL_STR(return_value, strpprintf(0, "%s/%s/%s", Z_STRVAL_P(return_value), ZSTR_VAL(key), Z_STRVAL_P(value) ));
-
-        } ZEND_HASH_FOREACH_END();
-    
-        if ( XAN_G(must_url_suffix) ) {
-            url = strpprintf(0, "%s%s.%s", ZSTR_VAL(url), Z_STRVAL_P(return_value), Z_STRVAL(XAN_G(url_suffix)) );
-        } else {
-            url = strpprintf(0, "%s%s", ZSTR_VAL(url), Z_STRVAL_P(return_value) );
-        }
-    } else {
-        if ( XAN_G(must_url_suffix) ) {
-            url = strpprintf(0, "%s.%s", ZSTR_VAL(url), Z_STRVAL(XAN_G(url_suffix)));
-        }
-    }
-
-    /* Dispatch the url */
-    xan_dispatch_url(url);
-
-    /* Release the url memory */
-    zend_string_release(url);
-
-    /* each forward return true */
-    ZVAL_TRUE(return_value);
-}/*}}}*/
-
-/**
- * {{{
- * proto Response::redirect($url, $getParams = [])
- */
-XAN_METHOD(Response, redirect)
-{
-    int root_url = 0;
-    zend_string *url, *key;
-    zval *get_params = NULL, *value;
-
-    if ( zend_parse_parameters( ZEND_NUM_ARGS() TSRMLS_CC, "S|a", &url, &get_params) == FAILURE) {
-        return ;
-    }
-
-    if ( !ZSTR_LEN(url) ) {
-        return ;
-    }
-
-    /* Make sure the url are right */
-    array_init(return_value);
-    key = php_trim( url, XAN_STRL("/"), 3 );
-    php_explode( strpprintf(0, "%s", "/"), key, return_value, ZEND_LONG_MAX );
-    if ( Z_H_N_E(Z_ARRVAL_P(return_value)) == 1 ) {
-        
-        Z_STRVAL(XAN_G(default_controller))[0] = tolower( Z_STRVAL(XAN_G(default_controller))[0] );
-        
-        /* Only one element & in root mode */
-        if ( root_url ) {
-            url = strpprintf( 0, "%s/%s/%s", ZSTR_VAL(url), Z_STRVAL(XAN_G(default_controller)), Z_STRVAL(XAN_G(default_action)) );
-        } else {
-            url = strpprintf( 0, "%s/%s/%s", Z_STRVAL(XAN_G(default_module)), Z_STRVAL(XAN_G(default_controller)), ZSTR_VAL(url) );
-        }
-
-        Z_STRVAL(XAN_G(default_controller))[0] = toupper( Z_STRVAL(XAN_G(default_controller))[0] );
-
-    } else if ( Z_H_N_E(Z_ARRVAL_P(return_value)) == 2 ) {
-        /* Only two element & in root mode */
-        if ( root_url ) {
-            url = strpprintf( 0, "%s/%s", ZSTR_VAL(url), Z_STRVAL(XAN_G(default_action)) );
-        } else {
-            url = strpprintf( 0, "%s/%s", Z_STRVAL(XAN_G(default_module)), ZSTR_VAL(url) );
-        }
-    }
-
-    if ( get_params && zend_hash_num_elements( Z_ARRVAL_P(get_params)) ) {
-        
-        ZVAL_STRING(return_value, "");
-        ZEND_HASH_FOREACH_STR_KEY_VAL( Z_ARRVAL_P(get_params), key, value ) {
-            
-            if ( !ZSTR_LEN(key) ) continue;
-            convert_to_string(value);
-            ZVAL_STR(return_value, strpprintf(0, "%s/%s/%s", Z_STRVAL_P(return_value), ZSTR_VAL(key), Z_STRVAL_P(value) ));
-
-        } ZEND_HASH_FOREACH_END();
-    
-        if ( XAN_G(must_url_suffix) ) {
-            url = strpprintf(0, "%s%s.%s", ZSTR_VAL(url), Z_STRVAL_P(return_value), Z_STRVAL(XAN_G(url_suffix)) );
-        } else {
-            url = strpprintf(0, "%s%s", ZSTR_VAL(url), Z_STRVAL_P(return_value) );
-        }
-    } else {
-        if ( XAN_G(must_url_suffix) ) {
-            url = strpprintf(0, "%s.%s", ZSTR_VAL(url), Z_STRVAL(XAN_G(url_suffix)));
-        }
-    }
-
-    /* Using the header to redirect the url */
-    sapi_header_line ctr = {0};
-    ctr.line_len = spprintf(
-        &(ctr.line), 
-        0, 
-        "%s: %s%s", 
-        "Location", 
-        ZSTR_VAL(url)[0] == '/' ? "" : "/",
-        ZSTR_VAL(url)
-    );
-    ctr.response_code = 200;                                           
-    sapi_header_op(SAPI_HEADER_REPLACE, &ctr);
-    efree(ctr.line);
-
-    /* Release the url info */
-    zend_string_release(url);
-}/*}}}*/
-
-/**
  * proto All functions for the Xan\Response class
  */
 XAN_FUNCTIONS(response)
     XAN_ME(Response, __construct, arginfo_xan_response_construct, ZEND_ACC_PUBLIC)
-    XAN_ME(Response, forward, arginfo_xan_response_forward, ZEND_ACC_PUBLIC)
-    XAN_ME(Response, redirect, arginfo_xan_response_redirect, ZEND_ACC_PUBLIC)
 XAN_FUNCTIONS_END()
 /**}}}*/
 

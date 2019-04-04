@@ -28,7 +28,6 @@
 #include "php_xannotation.h"
 #include "ext/standard/info.h"
 #include "kernel/app/request.h"
-#include "kernel/class/aop/proxy.h"
 #include "ext/standard/php_string.h"
 
 /**

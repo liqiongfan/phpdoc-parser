@@ -27,21 +27,12 @@
 #include "ext/standard/info.h"
 #include "php_xannotation.h"
 
-zend_class_entry *xan_ce;
-zend_class_entry *proxy_ce;
+zend_class_entry *xan_di_ce;
 zend_class_entry *request_ce;
 zend_class_entry *response_ce;
-zend_class_entry *xan_app_ce;
-zend_class_entry *xan_view_ce;
-zend_class_entry *loader_ce;
-zend_class_entry *aspect_ce;
 zend_class_entry *xan_session_ce;
 zend_class_entry *xan_model_ce;
-zend_class_entry *annotation_ce;
-zend_class_entry *class_attr_ce;
-zend_class_entry *class_const_ce;
 zend_class_entry *xan_adapter_ce;
-zend_class_entry *config_class_ce;
 
 /*
  * Local variables:

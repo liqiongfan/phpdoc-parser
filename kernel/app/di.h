@@ -17,12 +17,12 @@
 */
 
 /* $Id$ */
-#ifndef XAN_VIEW_H
-#define XAN_VIEW_H
+#ifndef XAN_DI_H
+#define XAN_DI_H
 
-extern zend_class_entry *xan_view_ce;
+extern zend_class_entry *xan_di_ce;
 
-#endif /* XAN_VIEW_H */
+#endif /* XAN_DI_H */
 
 
 

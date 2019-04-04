@@ -83,6 +83,7 @@ class Session
      * Same use of the __get($name) method
      *
      * @param string $name
+     * @return mixed
      */
     public function get($name) {
     

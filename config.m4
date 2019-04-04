@@ -62,22 +62,13 @@ if test "$PHP_XANNOTATION" != "no"; then
   PHP_NEW_EXTENSION(
     xannotation, 
     kernel/entries.c              \
-    kernel/xan_class.c            \
-    kernel/loader/loader.c        \
-    kernel/app/app.c              \
+    kernel/app/di.c              \
+    kernel/app/session.c          \
     kernel/app/net.c              \
     kernel/db/adapter.c           \
     kernel/db/model.c             \
-    kernel/app/view.c             \
     kernel/app/request.c          \
     kernel/app/response.c         \
-    kernel/app/dispatch.c         \
-    kernel/class/config_class.c   \
-    kernel/class/aop/proxy.c      \
-    kernel/class/annotation/aspect.c        \
-    kernel/class/annotation/class_attr.c    \
-    kernel/class/annotation/class_const.c   \
-    kernel/class/annotation/annotation.c    \
     xannotation.c, 
     $ext_shared,, -DZEND_ENABLE_STATIC_TSRMLS_CACHE=1)
 fi

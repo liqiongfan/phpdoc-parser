@@ -23,6 +23,7 @@
 #define PDO_OBJECT "_pdo"
 #define PDO_BIND_DATA "_pdo_bind"
 #define PDO_STATEMENT_OBJ "_pdo_state_obj"
+#define PDO_ROWS_COUNT  "_pdo_rows_count"
 
 /* To get the pdo object */
 void xan_get_pdo_object(zval *pdo_object, char *dsn, char *username, char *password, zval *options, zval *retval);
