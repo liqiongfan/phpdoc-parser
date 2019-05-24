@@ -22,6 +22,9 @@
 
 extern zend_class_entry *response_ce;
 
+#define XAN_RESPONSE_HEADER_VARIABLES      "__http_headers"    /* Response HTTP headers */
+#define XAN_RESPONSE_DATA                  "__data"            /* The data which you want to response to the client */
+
 #endif /* XAN_RESPONSE_HELPER_H */
 
 
