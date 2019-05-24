@@ -147,10 +147,10 @@ abstract class Model extends Adapter
      * LIMIT condition
      *
      * @param int $limit
-     * @param int $offset
+     * @param int|null $offset if null the offset is 0
      * @return Model
      */
-    final function limit($limit, $offset) {
+    final function limit($limit, $offset = null) {
         return $this;
     }
     
