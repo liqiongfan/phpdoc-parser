@@ -149,16 +149,16 @@ XAN_METHOD(Response, setJsonContent)
 XAN_METHOD(Response, setRawContent)
 {
     zend_string *string;
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &string) == FAILURE) {
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "S", &string) == FAILURE) {
         return ;
     }
-    if ( string ) {
+    if ( ZSTR_LEN(string) ) {
         /* zend_class_entry *scope, zval *object, const char *name, size_t name_length, zend_string *value */
-        zend_update_property_str(
+        zend_update_property_string(
             response_ce, 
             getThis(), 
             XAN_STRL(XAN_RESPONSE_DATA), 
-            string
+            ZSTR_VAL(string)
         );
     }
     ZVAL_COPY(return_value, getThis());
