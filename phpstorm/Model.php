@@ -20,19 +20,8 @@ abstract class Model extends Adapter
      * Model constructor.
      *
      * Construct the Model object
-     *
-     * <pre>
-     *      new Adapter('mysql:host=localhost;dbname=xxx;port=3306")
-     * </pre>
-     *
-     * @param $dsn              The connection dsn
-     * @param $username         The username to log in Db engine.
-     * @param $password         The password with the username above
-     * @param array $options    The other options to init the Db adapter
      */
-    final function __construct($dsn, $username, $password, $options = []) {
-    
-    }
+    final function __construct() { }
     
     /**
      * Return the table name
@@ -45,16 +34,12 @@ abstract class Model extends Adapter
      * @param string $adapterKey       The adapter key owned by global IOC di container
      * @return mixed
      */
-    final function setAdapter($adapterKey) {
-    
-    }
+    final function setAdapter($adapterKey) { }
     
     /**
      * Derived class can override this method to do the init job
      */
-    function init() {
-    
-    }
+    function init() { }
     
     /**
      * Set the fields of the SQL SELECT fields
@@ -150,17 +135,13 @@ abstract class Model extends Adapter
      * ActiveRecord feature use __get
      * @param $name
      */
-    final function __get($name) {
-    
-    }
+    final function __get($name) { }
     
     /**
      * Get the previous executed SQL
      * @return string
      */
-    final function getExecutedSql() {
-    
-    }
+    final function getExecutedSql() { }
     
     /**
      * LIMIT condition
@@ -191,18 +172,14 @@ abstract class Model extends Adapter
      * @param array $bindValues
      * @return array|void
      */
-    function one($bindValues = []) {
-    
-    }
+    function one($bindValues = []) { }
     
     /**
      * Fetch all result from the Db engine. with the given binding values
      * @param array $bindValues
      * @return array|void
      */
-    function all($bindValues = []) {
-    
-    }
+    function all($bindValues = []) { }
     
     /**
      * Update the table with the given data
@@ -212,9 +189,7 @@ abstract class Model extends Adapter
      * @param array|string  $where
      * @return bool <b>TRUE</b> on success or <b>FALSE</b> on failure.
      */
-    function update($data = [], $bindValues = [], $where) {
-    
-    }
+    function update($data = [], $bindValues = [], $where) { }
     
     /**
      * INSERT INTO the DB engine.
@@ -222,9 +197,7 @@ abstract class Model extends Adapter
      * @param array $bindValues
      * @return bool <b>TRUE</b> on success or <b>FALSE</b> on failure.
      */
-    function save($data = [], $bindValues = []) {
-    
-    }
+    function save($data = [], $bindValues = []) { }
     
     /**
      * DELETE command
@@ -232,9 +205,7 @@ abstract class Model extends Adapter
      * @param array         $bindValues
      * @return bool <b>TRUE</b> on success or <b>FALSE</b> on failure.
      */
-    function delete($where, $bindValues = []) {
-    
-    }
+    function delete($where, $bindValues = []) { }
     
     /**
      * Return the affected rows

@@ -23,13 +23,12 @@ class Adapter
      *      new Adapter('mysql:host=localhost;dbname=xxx;port=3306")
      * </pre>
      *
-     * @param $dsn              The connection dsn
-     * @param $username         The username to log in Db engine.
-     * @param $password         The password with the username above
-     * @param array $options    The other options to init the Db adapter
+     * @param string $dsn          The connection dsn
+     * @param string $username     The username to log in Db engine.
+     * @param string $password     The password with the username above
+     * @param array $options       The other options to init the Db adapter
      */
     function __construct($dsn, $username, $password, $options = []) {
-    
     }
     
     /**
@@ -42,9 +41,10 @@ class Adapter
      * </pre>
      *
      * @param string $querySql
+     * @param array  $bindValues
      * @return Adapter
      */
-    function createQueryCommand($querySql) {
+    function createQueryCommand($querySql, $bindValues = []) {
         return $this;
     }
     
@@ -64,26 +64,10 @@ class Adapter
      * To do the `INSERT` | `UPATE` | `DELETE` | `CREATE` | `ALTER` SQL and so on...
      * This method return true or false to given the result of the operation.
      * @param string $execSql
-     * @return int <b>PDO::exec</b> returns the number of rows that were modified
-     * or deleted by the SQL statement you issued. If no rows were affected,
-     * <b>PDO::exec</b> returns 0.
-     * </p>
-     * This function may
-     * return Boolean <b>FALSE</b>, but may also return a non-Boolean value which
-     * evaluates to <b>FALSE</b>. Please read the section on Booleans for more
-     * information. Use the ===
-     * operator for testing the return value of this
-     * function.
-     * <p>
-     * The following example incorrectly relies on the return value of
-     * <b>PDO::exec</b>, wherein a statement that affected 0 rows
-     * results in a call to <b>die</b>:
-     * <code>
-     * $db->exec() or die(print_r($db->errorInfo(), true));
-     * </code>
+     * @return $this
      */
-    function execCommand($execSql) {
-    
+    function execCommand($execSql, $bindValues = []) {
+        return $this;
     }
     
     /**
@@ -118,27 +102,24 @@ class Adapter
      * @return array
      */
     function all() {
-        return [ [] ];
+        return [];
     }
     
     /**
      * Start the transaction
      */
     function beginTransaction() {
-    
     }
     
     /**
      * Rollback the transaction
      */
     function rollBack() {
-    
     }
     
     /**
      * Commit the curernt transaction
      */
     function commit() {
-    
     }
 }

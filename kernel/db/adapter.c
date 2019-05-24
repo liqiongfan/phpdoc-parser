@@ -32,6 +32,7 @@
 #include "Zend/zend_smart_str.h"
 #include "ext/pdo/php_pdo_driver.h"
 #include "ext/standard/php_string.h"
+#include "ext/standard/php_array.h"
 #include "Zend/zend_exceptions.h"
 
 #include <stdlib.h>
@@ -58,6 +59,7 @@ ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(ARGINFO(xan_adapter_exec_command), 0, 0, 1)
     ZEND_ARG_INFO(0, sql)
+    ZEND_ARG_INFO(0, bindValues)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(ARGINFO(xan_adapter_get_pdo), 0, 0, 0)
@@ -131,6 +133,11 @@ XAN_METHOD(Adapter, createQueryCommand)
         XAN_INFO(E_ERROR, "The preapared SQL was invalid!");
     }
 
+    if ( bind_values )
+    {
+    	zend_update_property(XAN_ENTRY_OBJ(getThis()), XAN_STRL(PDO_BIND_DATA), bind_values);
+    }
+
     xan_pdo_prepare(pdo_object, ZSTR_VAL(prepare_sql), pdo_state_obj);
     xan_check_pdo_error(pdo_object, NULL);
     ZVAL_COPY(return_value, getThis());
@@ -142,7 +149,8 @@ XAN_METHOD(Adapter, createQueryCommand)
  */
 XAN_METHOD(Adapter, execute)
 {
-    zval *bind_data = NULL, *pdo_state_obj, retval, rows;
+	uint32_t length = 0;
+    zval *bind_data = NULL, *pdo_state_obj, result_array, *bind_values, retval, rows, *temp_val;
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|a", &bind_data) == FAILURE) {
         return ;
     }
@@ -151,24 +159,42 @@ XAN_METHOD(Adapter, execute)
         XAN_INFO(E_ERROR, "Please call createCommand() first!");
     }
 
-    xan_pdo_execute(pdo_state_obj, bind_data, &retval);
-    xan_check_pdo_error(NULL, pdo_state_obj);
+    /* Get bind_values from pre-set */
+    array_init(&result_array);
     
+    bind_values = zend_read_property(XAN_ENTRY_OBJ(getThis()), XAN_STRL(PDO_BIND_DATA), 1, NULL);
+    if ( bind_values && !ZVAL_IS_NULL(bind_values) )
+    {
+        ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(bind_values), temp_val) {
+            zend_hash_next_index_insert(Z_ARRVAL(result_array), temp_val);
+        } ZEND_HASH_FOREACH_END();
+    }
+
+    if ( bind_data && !ZVAL_IS_NULL(bind_data) )
+    {
+        ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(bind_data), temp_val) {
+            zend_hash_next_index_insert(Z_ARRVAL(result_array), temp_val);
+        } ZEND_HASH_FOREACH_END();
+    }
+
+    xan_pdo_execute(pdo_state_obj, &result_array, &retval);
+    xan_check_pdo_error(NULL, pdo_state_obj);
     xan_pdo_row_count(pdo_state_obj, &rows);
     zend_update_property(XAN_ENTRY_OBJ(getThis()), XAN_STRL(PDO_ROWS_COUNT), &rows);
 
     ZVAL_COPY(return_value, &retval);
+    zend_array_destroy(Z_ARRVAL(result_array));
 }/*}}}*/
 
 /**
  * {{{
- * proto Adapter::execCommand($sql)
+ * proto Adapter::execCommand($sql [, $bindValues = [] ] )
  */
 XAN_METHOD(Adapter, execCommand)
 {
-    zval *pdo_object, rows;
+    zval *pdo_object, rows, *pdo_state_obj, *bind_values = NULL;
     zend_string *exec_sql;
-    if (zend_parse_parameters( ZEND_NUM_ARGS() TSRMLS_CC, "S", &exec_sql) == FAILURE ) {
+    if (zend_parse_parameters( ZEND_NUM_ARGS() TSRMLS_CC, "S|a", &exec_sql, &bind_values) == FAILURE ) {
         return ;
     }
 
@@ -177,15 +203,23 @@ XAN_METHOD(Adapter, execCommand)
     }
 
     pdo_object = zend_read_property(XAN_ENTRY_OBJ(getThis()), XAN_STRL(PDO_OBJECT), 1, NULL);
+    pdo_state_obj = zend_read_property(XAN_ENTRY_OBJ(getThis()), XAN_STRL(PDO_STATEMENT_OBJ), 1, NULL);
     if ( pdo_object == NULL ) {
         if ( ZVAL_IS_NULL(&XAN_G(pdo_object)) ) {
             XAN_INFO(E_ERROR, "Please construct the Adapter class first!");
         }
         ZVAL_COPY(pdo_object, &XAN_G(pdo_object));
     }
-    xan_pdo_exec(pdo_object, ZSTR_VAL(exec_sql), return_value);
 
+    if ( bind_values )
+    {
+    	zend_update_property(XAN_ENTRY_OBJ(getThis()), XAN_STRL(PDO_BIND_DATA), bind_values);
+    }
+
+    /* xan_pdo_exec(pdo_object, ZSTR_VAL(exec_sql), return_value); xan_check_pdo_error(pdo_object, NULL); */
+    xan_pdo_prepare(pdo_object, ZSTR_VAL(exec_sql), pdo_state_obj);
     xan_check_pdo_error(pdo_object, NULL);
+    ZVAL_COPY(return_value, getThis());
 }/*}}}*/
 
 /**

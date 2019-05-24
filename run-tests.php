@@ -24,7 +24,7 @@
    +----------------------------------------------------------------------+
  */
 
-/* $Id: cff12fd083801699b4798f22344968acfe731b10 $ */
+/* $Id: 4a412f6f458ff57f1abab3e1b2aff1e5f53f77ba $ */
 
 /* Sanity check to ensure that pcre extension needed by this script is available.
  * In the event it is not, print a nice error message indicating that this script will
@@ -671,7 +671,7 @@ if (isset($argc) && $argc > 1) {
 					$html_output = is_resource($html_file);
 					break;
 				case '--version':
-					echo '$Id: cff12fd083801699b4798f22344968acfe731b10 $' . "\n";
+					echo '$Id: 4a412f6f458ff57f1abab3e1b2aff1e5f53f77ba $' . "\n";
 					exit(1);
 
 				default:
@@ -841,9 +841,7 @@ HELP;
 
 		junit_save_xml();
 
-		if (getenv('REPORT_EXIT_STATUS') !== '0' &&
-			getenv('REPORT_EXIT_STATUS') !== 'no' &&
-			($sum_results['FAILED'] || $sum_results['BORKED'])) {
+		if (getenv('REPORT_EXIT_STATUS') == 1 && ($sum_results['FAILED'] || $sum_results['BORKED'])) {
 			exit(1);
 		}
 
@@ -979,9 +977,7 @@ save_or_mail_results();
 
 junit_save_xml();
 
-if (getenv('REPORT_EXIT_STATUS') !== '0' &&
-	getenv('REPORT_EXIT_STATUS') !== 'no' &&
-	($sum_results['FAILED'] || $sum_results['BORKED'])) {
+if (getenv('REPORT_EXIT_STATUS') == 1 && ($sum_results['FAILED'] || $sum_results['BORKED'])) {
 	exit(1);
 }
 exit(0);
@@ -1313,7 +1309,7 @@ TEST $file
 				unset($section_text['FILEEOF']);
 			}
 
-			foreach (array( 'FILE', 'EXPECT', 'EXPECTF', 'EXPECTREGEX' ) as $prefix) {
+			foreach (array( 'FILE', 'EXPECT', 'EXPECTF', 'EXPECTREGEX' ) as $prefix) {            
 				$key = $prefix . '_EXTERNAL';
 
 				if (@count($section_text[$key]) == 1) {
@@ -1611,9 +1607,9 @@ TEST $file
 			}
 		}
 	}
-
+	
 	if (!extension_loaded("zlib")
-	&& (	array_key_exists("GZIP_POST", $section_text)
+	&& (	array_key_exists("GZIP_POST", $section_text) 
 		||	array_key_exists("DEFLATE_POST", $section_text))
 	) {
 		$message = "ext/zlib required";
@@ -2202,7 +2198,7 @@ $output
 	if (isset($old_php)) {
 		$php = $old_php;
 	}
-
+	
 	$diff = empty($diff) ? '' : preg_replace('/\e/', '<esc>', $diff);
 
 	junit_mark_test_as($restype, str_replace($cwd . '/', '', $tested_file), $tested, null, $info, $diff);

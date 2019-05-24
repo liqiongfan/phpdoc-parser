@@ -166,9 +166,9 @@ PHP_RSHUTDOWN_FUNCTION(xannotation)
 PHP_MINFO_FUNCTION(xannotation)
 {
 	php_info_print_table_start();
-	php_info_print_table_header( 2, "Xdb support", "enabled" );
-	php_info_print_table_header( 2, "Author info", "Josin <a style=\"background-color: gray;opacity:.6;\" href=\"http://www.supjos.cn\">Xdb</a>" );
-	php_info_print_table_header( 2, "Xdb framework", "v" PHP_XANNOTATION_VERSION );
+	php_info_print_table_header( 2, "Xannotation support", "enabled" );
+	php_info_print_table_header( 2, "Author info", "Josin <a style=\"background-color: gray;opacity:.6;\" href=\"http://www.supjos.cn\">Xannotation</a>" );
+	php_info_print_table_header( 2, "Xannotation Db Model", "v" PHP_XANNOTATION_VERSION );
 	php_info_print_table_end();
 
 	/* Remove comments if you have entries in php.ini

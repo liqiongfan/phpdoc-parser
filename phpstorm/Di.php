@@ -28,17 +28,13 @@ class Di
      * @param object $value Value to store to the container.
      * @return boolean
      */
-    public static function set($key, $value) {
-
-    }
+    public static function set($key, $value) { }
 
     /**
      * Fetch the object from the container.
      * @param string $key The key to fetch the object which you set when storing the object.
      * @return object
      */
-    public static function get($key) {
-
-    }
+    public static function get($key) { }
     
 }

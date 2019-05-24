@@ -40,9 +40,7 @@ class Session
      *
      * Start the PHP SESSION if not active
      */
-    public function __construct() {
-    
-    }
+    public function __construct() { }
     
     /**
      * Return the $_SESSION
@@ -57,17 +55,13 @@ class Session
      * @param string $name
      * @param mixed $value
      */
-    public function __set($name, $value) {
-    
-    }
+    public function __set($name, $value) { }
     
     /**
      * To get the given value with the key $name
      * @param string $name
      */
-    public function __get($name) {
-    
-    }
+    public function __get($name) { }
     
     /**
      * To set the value into to the $_SESSION with the key $name and value $value
@@ -75,9 +69,7 @@ class Session
      * @param string $name
      * @param mixed $value
      */
-    public function set($name, $value) {
-    
-    }
+    public function set($name, $value) { }
     
     /**
      * Same use of the __get($name) method
@@ -85,41 +77,31 @@ class Session
      * @param string $name
      * @return mixed
      */
-    public function get($name) {
-    
-    }
+    public function get($name) { }
     
     /**
      * Return the current data
      *
      * @return mixed
      */
-    public function current() {
-    
-    }
+    public function current() { }
     
     /**
      * Return the current key
      * @return string
      */
-    public function key() {
-    
-    }
+    public function key() { }
     
     /**
      * Return the next value
      * @return mixed
      */
-    public function next() {
-    
-    }
+    public function next() { }
     
     /**
      * Set the position to 0, move to first
      */
-    public function rewind() {
-    
-    }
+    public function rewind() { }
     
     /**
      * The current pos. was invalid or not.
@@ -142,34 +124,26 @@ class Session
      * @param string $name
      * @return mixed
      */
-    public function offsetGet($name) {
-    
-    }
+    public function offsetGet($name) { }
     
     /**
      * Same with the magic method __set($name, $value)
      * @param string $name
      * @param mixed $value
      */
-    public function offsetSet($name, $value) {
-    
-    }
+    public function offsetSet($name, $value) { }
     
     /**
      * unset the current value of the $_SESSION
      *
      * @param string $name
      */
-    public function offsetUnset($name) {
-    
-    }
+    public function offsetUnset($name) { }
     
     /**
      * Exists value with the given $name key
      *
      * @param string $name
      */
-    public function offsetExists($name) {
-    
-    }
+    public function offsetExists($name) { }
 }
